@@ -30,14 +30,23 @@ public class InsurancePremium {
         scan.close();
     }
 
+    public static boolean AgebasedPremium(int age){
+        if(age<=25){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
     public static int calculatePremium(int age, String vehicleType, int numberOfClaims) {
 
         int finalPremium = BASE_PREMIUM;
 
 
-        if (age < 25) {
+        if (AgebasedPremium(age)) {
             finalPremium += (BASE_PREMIUM * 20) / 100;
-        } else if (age > 60) {
+        } else{
             finalPremium += (BASE_PREMIUM * 10) / 100;
         }
 
