@@ -30,7 +30,7 @@ public class InsurancePremium {
         scan.close();
     }
 
-    public static boolean AgebasedPremium(int age){
+    public static boolean isDriverYoung(int age){
         if(age<=25){
             return true;
         }
@@ -44,7 +44,7 @@ public class InsurancePremium {
         int finalPremium = BASE_PREMIUM;
 
 
-        if (AgebasedPremium(age)) {
+        if (isDriverYoung(age)) {
             finalPremium += (BASE_PREMIUM * 20) / 100;
         } else{
             finalPremium += (BASE_PREMIUM * 10) / 100;
