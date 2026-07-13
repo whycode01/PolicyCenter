@@ -23,7 +23,7 @@ public class PremiumCalculator {
     private static final int YOUNG_DRIVER_AGE_LIMIT = 25;
     private static final double YOUNG_DRIVER_LOADING_PERCENT = 20.0;
     private static final double EXPERIENCED_DRIVER_LOADING_PERCENT = 10.0;
-    private static final int CLAIM_LOADING_PER_CLAIM = 150;
+    private static final int CLAIM_SURCHARGES_PER_CLAIM = 300;
 
     public static void main(String[] args) {
 
@@ -59,7 +59,7 @@ public class PremiumCalculator {
                     + "% of Base Premium");
 
             System.out.println("Each Previous Claim : +Rs. "
-                    + CLAIM_LOADING_PER_CLAIM);
+                    + CLAIM_SURCHARGES_PER_CLAIM);
 
             System.out.println("\nInput Requirements:");
             System.out.println("- Age must be between 18 and 100");
@@ -121,9 +121,9 @@ public class PremiumCalculator {
             System.out.println("Claims Loading ("
                     + claims
                     + " x Rs. "
-                    + CLAIM_LOADING_PER_CLAIM
+                    + CLAIM_SURCHARGES_PER_CLAIM
                     + ") : Rs. "
-                    + (claims * CLAIM_LOADING_PER_CLAIM));
+                    + (claims * CLAIM_SURCHARGES_PER_CLAIM));
 
             System.out.println("---------------------------------------");
             System.out.println("Final Premium : Rs. " + premium);
@@ -170,7 +170,7 @@ public class PremiumCalculator {
 
         finalPremium +=
                 numberOfClaims
-                        * CLAIM_LOADING_PER_CLAIM;
+                        * CLAIM_SURCHARGES_PER_CLAIM;
 
         return finalPremium;
     }
