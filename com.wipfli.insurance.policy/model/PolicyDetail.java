@@ -2,7 +2,9 @@ package model;
 
 import java.util.Objects;
 
-public class PolicyDetail {
+public abstract class PolicyDetail {
+
+    public abstract String getPolicyDetails();
 
     private final String policyNum;
     private Customer customer;
@@ -10,6 +12,7 @@ public class PolicyDetail {
     private int previousClaimCount;
     private PolicyStatus status;
 
+    // Constructor with claims history
     public PolicyDetail(String policyNum,
                         Customer customer,
                         VehicleType vehicleType,
@@ -20,6 +23,19 @@ public class PolicyDetail {
         this.vehicleType = vehicleType;
         this.previousClaimCount = previousClaimCount;
         this.status = PolicyStatus.ACTIVE;
+    }
+
+    // Overloaded constructor (no claim history)
+    public PolicyDetail(String policyNum,
+                        Customer customer,
+                        VehicleType vehicleType) {
+
+        this(
+                policyNum,
+                customer,
+                vehicleType,
+                0
+        );
     }
 
     public String getPolicyNum() {
@@ -98,6 +114,7 @@ public class PolicyDetail {
 
     @Override
     public String toString() {
+
         return "PolicyDetail{" +
                 "policyNum='" + policyNum + '\'' +
                 ", customer=" + customer +
