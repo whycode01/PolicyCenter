@@ -3,6 +3,9 @@ package app;
 import model.Customer;
 import model.PolicyDetail;
 import model.VehicleType;
+import model.CarPolicy;      // CHANGE: import subclass
+import model.BikePolicy;     // CHANGE: import subclass
+import model.TruckPolicy;    // CHANGE: import subclass
 import service.NoClaimBonusCalculator;
 import service.PolicyValidator;
 import service.PremiumCalculable;
@@ -206,13 +209,70 @@ public class PremiumCalculatorApp {
                 }
             }
 
-            policies[i] =
-                    new PolicyDetail(
-                            policyNum,
-                            customer,
-                            vehicleType,
-                            previousClaims
+
+            switch (vehicleType) {
+
+                case CAR:
+
+                    System.out.print(
+                            "Registration Number : "
                     );
+
+                    String registrationNumber =
+                            scanner.nextLine();
+
+                    policies[i] =
+                            new CarPolicy(
+                                    policyNum,
+                                    customer,
+                                    previousClaims,
+                                    registrationNumber
+                            );
+
+                    break;
+
+                case BIKE:
+
+                    System.out.print(
+                            "Engine CC : "
+                    );
+
+                    int engineCC =
+                            scanner.nextInt();
+
+                    scanner.nextLine();
+
+                    policies[i] =
+                            new BikePolicy(
+                                    policyNum,
+                                    customer,
+                                    previousClaims,
+                                    engineCC
+                            );
+
+                    break;
+
+                case TRUCK:
+
+                    System.out.print(
+                            "Load Capacity (Tons) : "
+                    );
+
+                    double loadCapacity =
+                            scanner.nextDouble();
+
+                    scanner.nextLine();
+
+                    policies[i] =
+                            new TruckPolicy(
+                                    policyNum,
+                                    customer,
+                                    previousClaims,
+                                    loadCapacity
+                            );
+
+                    break;
+            }
         }
 
         System.out.println(
@@ -250,6 +310,8 @@ public class PremiumCalculatorApp {
                     "Final Premium : Rs."
                             + noClaimPremium);
         }
+
+
 
         while (true) {
 
@@ -374,42 +436,11 @@ public class PremiumCalculatorApp {
 
                     case 4:
 
+                        // CHANGE: use overridden getPolicyDetails()
+                        // instead of manually printing each field.
+                        // Prints the correct subclass version automatically.
                         System.out.println(
-                                "\nPolicy Number : "
-                                        + selectedPolicy
-                                        .getPolicyNum()
-                        );
-
-                        System.out.println(
-                                "Customer Name : "
-                                        + selectedPolicy
-                                        .getCustomer()
-                                        .getCustomerName()
-                        );
-
-                        System.out.println(
-                                "Customer Age : "
-                                        + selectedPolicy
-                                        .getCustomer()
-                                        .getCustomerAge()
-                        );
-
-                        System.out.println(
-                                "Vehicle Type : "
-                                        + selectedPolicy
-                                        .getVehicleType()
-                        );
-
-                        System.out.println(
-                                "Claims : "
-                                        + selectedPolicy
-                                        .getPreviousClaimCount()
-                        );
-
-                        System.out.println(
-                                "Status : "
-                                        + selectedPolicy
-                                        .getStatus()
+                                selectedPolicy.getPolicyDetails()
                         );
 
                         break;

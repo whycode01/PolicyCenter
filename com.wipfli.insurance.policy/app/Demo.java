@@ -2,80 +2,132 @@ package app;
 
 import model.Customer;
 import model.PolicyDetail;
-import model.VehicleType;
+import model.CarPolicy;
+import model.BikePolicy;
+import model.TruckPolicy;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+
+import service.PremiumCalculable;
+import service.StandardPremiumCalculator;
+import service.NoClaimBonusCalculator;
+
+import service.PolicyValidator;
+
+
+
 
 public class Demo {
 
     public static void main(String[] args) {
 
-        Customer customer =
-                new Customer(
-                        "Gaurav",
-                        22
-                );
+        Scanner scanner = new Scanner(System.in);
 
-        PolicyDetail policy =
-                new PolicyDetail(
-                        "POL101",
-                        customer,
-                        VehicleType.CAR,
-                        1
-                );
+        List<PolicyDetail> policies = new ArrayList<>();
 
-        System.out.println(
-                "Created "
-                        + policy.getPolicyNum()
-                        + " for "
-                        + policy.getCustomer()
-                        .getCustomerName()
-                        + " (age "
-                        + policy.getCustomer()
-                        .getCustomerAge()
-                        + "), "
-                        + policy.getVehicleType()
-                        + ", "
-                        + policy.getPreviousClaimCount()
-                        + " claim(s)"
-                        + " - Status "
-                        + policy.getStatus()
+        PolicyValidator validator = new PolicyValidator();
+
+
+
+        System.out.println("===== POLYMORPHISM DEMO (Assignment 5) =====");
+        System.out.println("We will create one Car ,truck and bike Policy\n");
+
+        System.out.println("---- Enter Car Policy ----");
+        System.out.print("Policy Number : ");
+        String carNum = scanner.nextLine();
+       validator.validatePolicyNumber(carNum);
+
+        System.out.print("Customer Name : ");
+        String carName = scanner.nextLine();
+
+        System.out.print("Customer Age : ");
+        int carAge = scanner.nextInt();
+        scanner.nextLine();
+        validator.validateAge(carAge);
+
+        System.out.print("Previous Claims : ");
+        int carPreviousClaims = scanner.nextInt();
+        scanner.nextLine();
+        validator.validateClaimCount(carPreviousClaims);
+
+        System.out.print("Registration Number : ");
+        String registration = scanner.nextLine();
+
+        policies.add(
+                new CarPolicy(
+                        carNum,
+                        new Customer(carName, carAge),
+                        carPreviousClaims,
+                        registration
+                )
         );
 
-        policy.recordClaim();
 
-        System.out.println(
-                "\nrecordClaim() called"
+
+        System.out.println("---- Enter Truck Policy ----");
+        System.out.print("Policy Number : ");
+        String truckNum = scanner.nextLine();
+        validator.validatePolicyNumber(truckNum);
+
+        System.out.print("Customer Name : ");
+        String truckName = scanner.nextLine();
+
+        System.out.print("Customer Age : ");
+        int truckAge = scanner.nextInt();
+        scanner.nextLine();
+        validator.validateAge(truckAge);
+
+        System.out.print("Previous Claims : ");
+        int truckPreviousClaims = scanner.nextInt();
+        scanner.nextLine();
+        validator.validateClaimCount(truckPreviousClaims);
+
+        System.out.print("Ton unit : ");
+        int tonSize = scanner.nextInt();
+        scanner.nextLine();
+
+        policies.add(
+                new TruckPolicy(
+                        truckNum,
+                        new Customer(truckName, truckAge),
+                        truckPreviousClaims,
+                        tonSize
+                )
         );
 
-        System.out.println(
-                "Claims are now : "
-                        + policy.getPreviousClaimCount()
-        );
 
-        policy.expire();
 
-        System.out.println(
-                "\nexpire() called"
-        );
 
-        System.out.println(
-                "Status is now : "
-                        + policy.getStatus()
-        );
+        System.out.println("\n========== POLYMORPHISM OUTPUT ==========");
 
-        try {
+        for (PolicyDetail policy : policies) {
 
-            policy.renew();
+            System.out.println(policy.getPolicyDetails());
 
-        } catch (Exception e) {
-
-            System.out.println(
-                    "\nrenew() called"
-            );
-
-            System.out.println(
-                    "REJECTED : "
-                            + e.getMessage()
-            );
         }
+
+        PremiumCalculable standardCalculator =
+                new StandardPremiumCalculator();
+
+        PremiumCalculable noClaimCalculator =
+                new NoClaimBonusCalculator();
+
+        for (PolicyDetail policy : policies) {
+
+            double standardPremium =
+                    standardCalculator.calculatePremium(policy);
+
+            double noClaimPremium =
+                    noClaimCalculator.calculatePremium(policy);
+
+            System.out.println("Standard Premium : Rs." + standardPremium);
+            System.out.println("Final Premium : Rs." + noClaimPremium);
+
+        }
+
+        scanner.close();
     }
 }
