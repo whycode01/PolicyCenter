@@ -17,7 +17,8 @@ public class StandardPremiumCalculator implements PremiumCalculable {
 
         double finalPremium = basePremium;
 
-        if (isYoungDriver(policy.getCustomerAge())) {
+        if (isYoungDriver(policy.getCustomer()
+                .getCustomerAge())) {
             finalPremium += (basePremium * YOUNG_DRIVER_LOADING_PERCENT) / 100;
         } else {
             finalPremium += (basePremium * EXPERIENCED_DRIVER_LOADING_PERCENT) / 100;

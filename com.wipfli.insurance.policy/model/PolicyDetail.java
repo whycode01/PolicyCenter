@@ -4,35 +4,30 @@ import java.util.Objects;
 
 public class PolicyDetail {
 
-    private String policyNum;
-    private String customerName;
-    private int customerAge;
+    private final String policyNum;
+    private Customer customer;
     private VehicleType vehicleType;
     private int previousClaimCount;
+    private PolicyStatus status;
 
     public PolicyDetail(String policyNum,
-                        String customerName,
-                        int customerAge,
+                        Customer customer,
                         VehicleType vehicleType,
                         int previousClaimCount) {
 
         this.policyNum = policyNum;
-        this.customerName = customerName;
-        this.customerAge = customerAge;
+        this.customer = customer;
         this.vehicleType = vehicleType;
         this.previousClaimCount = previousClaimCount;
+        this.status = PolicyStatus.ACTIVE;
     }
 
     public String getPolicyNum() {
         return policyNum;
     }
 
-    public String getCustomerName() {
-        return customerName;
-    }
-
-    public int getCustomerAge() {
-        return customerAge;
+    public Customer getCustomer() {
+        return customer;
     }
 
     public VehicleType getVehicleType() {
@@ -41,6 +36,42 @@ public class PolicyDetail {
 
     public int getPreviousClaimCount() {
         return previousClaimCount;
+    }
+
+    public PolicyStatus getStatus() {
+        return status;
+    }
+
+    private void ensureActive() {
+
+        if (status != PolicyStatus.ACTIVE) {
+
+            throw new IllegalStateException(
+                    "Cannot perform operation on policy "
+                            + policyNum
+                            + ". Status is "
+                            + status
+            );
+        }
+    }
+
+    public void expire() {
+
+        ensureActive();
+
+        status = PolicyStatus.EXPIRED;
+    }
+
+    public void renew() {
+
+        ensureActive();
+
+        status = PolicyStatus.RENEWED;
+    }
+
+    public void recordClaim() {
+
+        previousClaimCount++;
     }
 
     @Override
@@ -55,22 +86,24 @@ public class PolicyDetail {
         }
 
         PolicyDetail other = (PolicyDetail) obj;
+
         return policyNum.equals(other.policyNum);
     }
 
     @Override
     public int hashCode() {
+
         return Objects.hash(policyNum);
     }
 
     @Override
     public String toString() {
         return "PolicyDetail{" +
-                "policyNum=" + policyNum +
-                ", customerName='" + customerName + '\'' +
-                ", customerAge=" + customerAge +
+                "policyNum='" + policyNum + '\'' +
+                ", customer=" + customer +
                 ", vehicleType=" + vehicleType +
                 ", previousClaimCount=" + previousClaimCount +
+                ", status=" + status +
                 '}';
     }
 }
