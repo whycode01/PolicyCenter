@@ -1,6 +1,13 @@
 package model;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
+
+// CHANGE: import your custom exceptions (no more generic exceptions)
+import exception.InvalidPolicyDataException;
+import exception.IllegalStatusChangeException;
+import exception.RenewalNotAllowedException;
 
 public abstract class PolicyDetail {
 
@@ -12,29 +19,52 @@ public abstract class PolicyDetail {
     private int previousClaimCount;
     private PolicyStatus status;
 
+    // CHANGE: every policy now has an expiry date
+    private final LocalDate expiryDate;
+
+    // CHANGE: renewal window is a shared business constant
+    private static final int RENEWAL_WINDOW_DAYS = 30;
+
+    // CHANGE: claims cap constant
+    private static final int CLAIMS_CAP = 3;
+
     // Constructor with claims history
+    // CHANGE: now takes expiryDate and validates it
     public PolicyDetail(String policyNum,
                         Customer customer,
                         VehicleType vehicleType,
-                        int previousClaimCount) {
+                        int previousClaimCount,
+                        LocalDate expiryDate) {
+
+        // CHANGE: expiry cannot be missing or in the past
+        if (expiryDate == null || expiryDate.isBefore(LocalDate.now())) {
+            throw new InvalidPolicyDataException(
+                    policyNum,
+                    "expiry date is missing or in the past"
+            );
+        }
 
         this.policyNum = policyNum;
         this.customer = customer;
         this.vehicleType = vehicleType;
         this.previousClaimCount = previousClaimCount;
+        this.expiryDate = expiryDate;
         this.status = PolicyStatus.ACTIVE;
     }
 
     // Overloaded constructor (no claim history)
+    // CHANGE: also takes expiryDate now
     public PolicyDetail(String policyNum,
                         Customer customer,
-                        VehicleType vehicleType) {
+                        VehicleType vehicleType,
+                        LocalDate expiryDate) {
 
         this(
                 policyNum,
                 customer,
                 vehicleType,
-                0
+                0,
+                expiryDate
         );
     }
 
@@ -58,29 +88,62 @@ public abstract class PolicyDetail {
         return status;
     }
 
-    private void ensureActive() {
+    // CHANGE: getter for the new field
+    public LocalDate getExpiryDate() {
+        return expiryDate;
+    }
+
+    // CHANGE: helper now throws YOUR exception instead of IllegalStateException
+    private void ensureActive(String action) {
 
         if (status != PolicyStatus.ACTIVE) {
 
-            throw new IllegalStateException(
-                    "Cannot perform operation on policy "
-                            + policyNum
-                            + ". Status is "
-                            + status
+            throw new IllegalStatusChangeException(
+                    policyNum,
+                    "cannot " + action + " a policy that is " + status
             );
         }
     }
 
+    // CHANGE: throws IllegalStatusChangeException (not IllegalStateException)
     public void expire() {
 
-        ensureActive();
+        ensureActive("expire");
 
         status = PolicyStatus.EXPIRED;
     }
 
-    public void renew() {
+    // CHANGE: renew() now takes today's date and enforces the two new rules
+    public void renew(LocalDate today) {
 
-        ensureActive();
+        // Rule: must still be ACTIVE
+        ensureActive("renew");
+
+        // Rule: claims cap — 3 or more must go to underwriting
+        if (previousClaimCount >= CLAIMS_CAP) {
+
+            throw new RenewalNotAllowedException(
+                    policyNum,
+                    previousClaimCount
+                            + " claims on record, "
+                            + CLAIMS_CAP
+                            + " or more must be referred to underwriting"
+            );
+        }
+
+        // Rule: renewal window — only in the last 30 days before expiry
+        LocalDate renewalOpens = expiryDate.minusDays(RENEWAL_WINDOW_DAYS);
+
+        if (today.isBefore(renewalOpens)) {
+
+            long daysEarly = ChronoUnit.DAYS.between(today, renewalOpens);
+
+            throw new RenewalNotAllowedException(
+                    policyNum,
+                    "renewal opens on " + renewalOpens
+                            + ", that is " + daysEarly + " days away"
+            );
+        }
 
         status = PolicyStatus.RENEWED;
     }
@@ -121,6 +184,7 @@ public abstract class PolicyDetail {
                 ", vehicleType=" + vehicleType +
                 ", previousClaimCount=" + previousClaimCount +
                 ", status=" + status +
+                ", expiryDate=" + expiryDate +
                 '}';
     }
 }

@@ -4,6 +4,9 @@ import model.Customer;
 import model.PolicyDetail;
 import model.VehicleType;
 
+// CHANGE: use your custom exception, not IllegalArgumentException
+import exception.InvalidPolicyDataException;
+
 public class PolicyValidator {
 
     private static final int MINIMUM_AGE = 18;
@@ -13,112 +16,98 @@ public class PolicyValidator {
 
         if (count <= 0) {
 
-            throw new IllegalArgumentException(
-                    "Number of policies must be greater than 0."
+            // CHANGE: policy number unknown here, so pass null
+            throw new InvalidPolicyDataException(
+                    null,
+                    "number of policies must be greater than 0"
             );
         }
     }
 
     public void validatePolicyNumber(String policyNum) {
 
-        if (policyNum == null ||
-                policyNum.trim().isEmpty()) {
+        if (policyNum == null || policyNum.trim().isEmpty()) {
 
-            throw new IllegalArgumentException(
-                    "Policy Number cannot be empty."
+            throw new InvalidPolicyDataException(
+                    policyNum,
+                    "policy number cannot be empty"
             );
         }
 
         if (!policyNum.matches("[A-Za-z0-9]+")) {
 
-            throw new IllegalArgumentException(
-                    "Policy Number must be alphanumeric."
+            throw new InvalidPolicyDataException(
+                    policyNum,
+                    "policy number must be alphanumeric"
             );
         }
     }
 
     public void validateAge(int age) {
 
-        if (age < MINIMUM_AGE ||
-                age > MAXIMUM_AGE) {
+        if (age < MINIMUM_AGE || age > MAXIMUM_AGE) {
 
-            throw new IllegalArgumentException(
-                    "Age must be between 18 and 100."
+            throw new InvalidPolicyDataException(
+                    null,
+                    "age must be between " + MINIMUM_AGE
+                            + " and " + MAXIMUM_AGE
+                            + ", got " + age
             );
         }
     }
 
-    public void validateVehicleType(
-            VehicleType vehicleType) {
+    public void validateVehicleType(VehicleType vehicleType) {
 
         if (vehicleType == null) {
 
-            throw new IllegalArgumentException(
-                    "Vehicle Type cannot be null."
+            throw new InvalidPolicyDataException(
+                    null,
+                    "vehicle type cannot be null"
             );
         }
     }
 
-    public void validateClaimCount(
-            int claimCount) {
+    public void validateClaimCount(int claimCount) {
 
         if (claimCount < 0) {
 
-            throw new IllegalArgumentException(
-                    "Claim count cannot be negative."
+            throw new InvalidPolicyDataException(
+                    null,
+                    "claim count cannot be negative, got " + claimCount
             );
         }
     }
 
-    public boolean isValid(
-            PolicyDetail policy) {
+    // CHANGE: isValid() boolean method REMOVED
+    // A boolean tells the caller *that* something failed, not *why*.
+    // Throwing carries the reason + policy number all the way up.
 
-        try {
-
-            validatePolicy(policy);
-
-            return true;
-
-        } catch (IllegalArgumentException e) {
-
-            return false;
-        }
-    }
-
-    public void validatePolicy(
-            PolicyDetail policy) {
+    public void validatePolicy(PolicyDetail policy) {
 
         if (policy == null) {
 
-            throw new IllegalArgumentException(
-                    "Policy cannot be null."
+            throw new InvalidPolicyDataException(
+                    null,
+                    "policy cannot be null"
             );
         }
 
-        validatePolicyNumber(
-                policy.getPolicyNum()
-        );
+        validatePolicyNumber(policy.getPolicyNum());
 
-        Customer customer =
-                policy.getCustomer();
+        Customer customer = policy.getCustomer();
 
         if (customer == null) {
 
-            throw new IllegalArgumentException(
-                    "Customer cannot be null."
+            throw new InvalidPolicyDataException(
+                    policy.getPolicyNum(),
+                    "customer cannot be null"
             );
         }
 
-        validateAge(
-                customer.getCustomerAge()
-        );
+        validateAge(customer.getCustomerAge());
 
-        validateVehicleType(
-                policy.getVehicleType()
-        );
+        validateVehicleType(policy.getVehicleType());
 
-        validateClaimCount(
-                policy.getPreviousClaimCount()
-        );
+        validateClaimCount(policy.getPreviousClaimCount());
     }
 }
