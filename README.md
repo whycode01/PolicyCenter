@@ -212,6 +212,4 @@ public static int calculatePremium(
 
 
 
-```
-You can save this as **README.md** in the root of your GitHub repository and commit it along with your Java source file.
-```
+
