@@ -2,6 +2,7 @@ package service;
 
 import exception.InvalidPolicyDataException;
 import fixtures.TestFixtures;
+import model.CarPolicy;
 import model.Customer;
 import model.PolicyDetail;
 import model.VehicleType;
@@ -52,7 +53,7 @@ class PolicyValidatorTest {
     @Test
     void nonAlphanumericPolicyNumber_throwsInvalidPolicyDataException() {
         PolicyDetail policy = new CarPolicy(
-                "POL-2000",
+                "POL_2000",
                 new Customer("Test", 30),
                 0,
                 LocalDate.of(2026, 12, 1),
@@ -65,30 +66,14 @@ class PolicyValidatorTest {
 
     @Test
     void ageBelowMinimum_throwsInvalidPolicyDataException() {
-        PolicyDetail policy = new CarPolicy(
-                "POL2000",
-                new Customer("Test", 17),
-                0,
-                LocalDate.of(2026, 12, 1),
-                "REG-123"
-        );
-
         assertThrows(InvalidPolicyDataException.class,
-                () -> validator.validatePolicy(policy));
+                () -> validator.validateAge(17));
     }
 
     @Test
     void ageAboveMaximum_throwsInvalidPolicyDataException() {
-        PolicyDetail policy = new CarPolicy(
-                "POL2000",
-                new Customer("Test", 101),
-                0,
-                LocalDate.of(2026, 12, 1),
-                "REG-123"
-        );
-
         assertThrows(InvalidPolicyDataException.class,
-                () -> validator.validatePolicy(policy));
+                () -> validator.validateAge(101));
     }
 
     @Test
