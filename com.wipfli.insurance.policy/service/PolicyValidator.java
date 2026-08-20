@@ -34,7 +34,7 @@ public class PolicyValidator {
             );
         }
 
-        if (!policyNum.matches("[A-Za-z0-9]+")) {
+        if (!policyNum.matches("[A-Za-z0-9-]+")) {
 
             throw new InvalidPolicyDataException(
                     policyNum,
