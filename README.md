@@ -249,9 +249,9 @@ $cp = "out\production\premium;out\test\premium;lib\junit-platform-console-standa
 ### Test Results
 
 ```text
-31 tests found
-31 tests started
-31 tests successful
+12 tests found
+12 tests started
+12 tests successful
 0 tests failed
 ```
 >>>>>>> 14c0675 (Document JUnit 5 tests and add console launcher JAR)
