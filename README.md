@@ -210,6 +210,48 @@ public static int calculatePremium(
 
 ***
 
+## Assignment 9: JUnit 5 Unit Tests
 
+All tests live under `com.wipfli.insurance.policy/test` and use the fixed six-policy dataset and `REFERENCE_DATE` from Assignment 8. No test calls `LocalDate.now()`.
 
+<<<<<<< HEAD
 
+=======
+### Test List for `StandardPremiumCalculator.calculatePremium(PolicyDetail)`
+
+1. `carPolicy_youngDriverWithOneClaim_returnsBasePlusSurchargeAndClaims`
+2. `bikePolicy_experiencedDriverWithTwoClaims_returnsBasePlusClaimsOnly`
+3. `truckPolicy_youngDriverWithNoClaims_returnsBasePlusSurcharge`
+4. `carPolicy_experiencedDriverWithZeroClaims_returnsBaseOnly`
+5. `bikePolicy_youngDriverWithZeroClaims_returnsBasePlusSurcharge`
+6. `carPolicy_multipleClaims_addsPerClaimSurcharge`
+
+### Test Classes
+
+| Class under test | Test class |
+| ---------------- | ---------- |
+| `service.StandardPremiumCalculator` | `service.StandardPremiumCalculatorTest` |
+| `service.PolicyValidator` | `service.PolicyValidatorTest` |
+| `service.NoClaimBonusCalculator` | `service.NoClaimBonusCalculatorTest` |
+| `service.PolicyRegister` | `service.PolicyRegisterTest` |
+| Exception hierarchy | `service.ExceptionHierarchyTest` |
+
+### Running the Tests
+
+From the project root:
+
+```powershell
+$java = "C:\Users\MishraG\Downloads\openjdk-17.0.2_windows-x64_bin\jdk-17.0.2\bin\java.exe"
+$cp = "out\production\premium;out\test\premium;lib\junit-platform-console-standalone-1.11.4.jar"
+& $java -cp $cp org.junit.platform.console.ConsoleLauncher --select-package service"
+```
+
+### Test Results
+
+```text
+31 tests found
+31 tests started
+31 tests successful
+0 tests failed
+```
+>>>>>>> 14c0675 (Document JUnit 5 tests and add console launcher JAR)
