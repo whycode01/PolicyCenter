@@ -10,6 +10,7 @@ import service.PolicyValidator;
 import service.PolicyRegister;
 import service.PremiumCalculable;
 import service.StandardPremiumCalculator;
+import service.NoClaimBonusCalculator;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -31,6 +32,7 @@ public class PremiumCalculatorApp {
     private final PolicyValidator validator = new PolicyValidator();
     private final PolicyRegister register = new PolicyRegister();
     private final PremiumCalculable standardCalculator = new StandardPremiumCalculator();
+    private final PremiumCalculable noClaimCalculator = new NoClaimBonusCalculator();
 
     public static void main(String[] args) {
         new PremiumCalculatorApp().run();
@@ -691,7 +693,7 @@ public class PremiumCalculatorApp {
     private void handleTotalPremiumForVehicleType() {
 
         VehicleType vehicleType = readVehicleTypeForLookup();
-        double total = register.totalPremiumForVehicleType(vehicleType, standardCalculator);
+        double total = register.totalPremiumForVehicleType(vehicleType, noClaimCalculator);
         System.out.println(vehicleType + ": " + total);
     }
 
@@ -739,14 +741,20 @@ public class PremiumCalculatorApp {
 
     private void handleTop5ByPremium() {
 
-        List<PolicyDetail> top5 = register.top5ByPremium(standardCalculator);
+        PremiumCalculable effectiveCalculator = policy ->
+                policy.getPreviousClaimCount() == 0
+                        ? noClaimCalculator.calculatePremium(policy)
+                        : standardCalculator.calculatePremium(policy);
+
+        List<PolicyDetail> top5 = register.top5ByPremium(effectiveCalculator);
 
         System.out.println("\n========== TOP 5 PREMIUMS ==========");
         top5.forEach(policy ->
                 System.out.println(policy.getPolicyNum()
                         + " | " + policy.getCustomer().getCustomerName()
                         + " | " + policy.getVehicleType()
-                        + " -> " + standardCalculator.calculatePremium(policy))
+                        + " | Claims: " + policy.getPreviousClaimCount()
+                        + " -> " + effectiveCalculator.calculatePremium(policy))
         );
     }
 

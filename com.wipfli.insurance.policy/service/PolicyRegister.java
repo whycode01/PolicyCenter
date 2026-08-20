@@ -169,7 +169,7 @@ public class PolicyRegister {
     }
 
 
-    // NEW: Stream-based queries for Assignment 8
+    // Stream-based queries for Assignment 8
 
     public Optional<PolicyDetail> findByPolicyNumber(String number) {
         return Optional.ofNullable(policiesByNumber.get(number));
