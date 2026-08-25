@@ -145,8 +145,8 @@ public class PremiumCalculatorApp {
         System.out.println("\nPREMIUM RULES");
         System.out.println("--------------------------------");
         System.out.println("Age <= 25  : +20% Loading");
-        System.out.println("Age > 25   : +10% Loading");
-        System.out.println("Each Claim : +Rs. 300");
+        System.out.println("Age > 25   : +0% Loading");
+        System.out.println("Each Claim : +Rs. 150");
         System.out.println("No Claim Bonus : 10% Discount");
     }
 
