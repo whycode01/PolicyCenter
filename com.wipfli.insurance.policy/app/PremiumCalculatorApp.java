@@ -76,54 +76,50 @@ public class PremiumCalculatorApp {
                     break;
 
                 case 6:
-                    handleViewByCustomer();
+                    handleShowPremium();
                     break;
 
                 case 7:
-                    handleViewByVehicleType();
+                    handleViewByCustomer();
                     break;
 
                 case 8:
-                    handleViewExpiringSoon();
+                    handleViewByVehicleType();
                     break;
 
                 case 9:
-                    handleViewSummary();
+                    handleViewExpiringSoon();
                     break;
 
                 case 10:
-                    handleFindSimilarPolicyHolders();
+                    handleViewSummary();
                     break;
 
                 case 11:
-                    handleFindByPolicyNumber();
+                    handleFindSimilarPolicyHolders();
                     break;
 
                 case 12:
-                    handleFindByCustomerName();
-                    break;
-
-                case 13:
                     handleTotalPremiumForVehicleType();
                     break;
 
-                case 14:
+                case 13:
                     handleCountPoliciesByVehicleType();
                     break;
 
-                case 15:
+                case 14:
                     handlePoliciesExpiringWithin();
                     break;
 
-                case 16:
+                case 15:
                     handleCustomerWithMostPolicies();
                     break;
 
-                case 17:
+                case 16:
                     handleTop5ByPremium();
                     break;
 
-                case 18:
+                case 17:
                     System.out.println("Application Closed");
                     scanner.close();
                     return;
@@ -399,19 +395,18 @@ public class PremiumCalculatorApp {
         System.out.println("3. Expire Policy");
         System.out.println("4. Renew Policy");
         System.out.println("5. Show Policy");
-        System.out.println("6. View Policies By Customer");
-        System.out.println("7. View Policies By Vehicle Type");
-        System.out.println("8. View Policies Expiring Soon");
-        System.out.println("9. View Premium Summary By Vehicle Type");
-        System.out.println("10. Find Similar Policy Holders");
-        System.out.println("11. Find Policy By Number (Optional)");
-        System.out.println("12. Find Policies By Customer Name");
-        System.out.println("13. Total Premium For Vehicle Type");
-        System.out.println("14. Count Policies By Vehicle Type");
-        System.out.println("15. Policies Expiring Within N Days");
-        System.out.println("16. Customer With Most Policies");
-        System.out.println("17. Top 5 Policies By Premium");
-        System.out.println("18. Exit");
+        System.out.println("6. Show Premium");
+        System.out.println("7. View Policies By Customer");
+        System.out.println("8. View Policies By Vehicle Type");
+        System.out.println("9. View Policies Expiring Soon");
+        System.out.println("10. View Premium Summary By Vehicle Type");
+        System.out.println("11. Find Similar Policy Holders");
+        System.out.println("12. Total Premium For Vehicle Type");
+        System.out.println("13. Count Policies By Vehicle Type");
+        System.out.println("14. Policies Expiring Within N Days");
+        System.out.println("15. Customer With Most Policies");
+        System.out.println("16. Top 5 Policies By Premium");
+        System.out.println("17. Exit");
     }
 
     private void handleRecordClaim() {
@@ -467,6 +462,18 @@ public class PremiumCalculatorApp {
 
             PolicyDetail selectedPolicy = readSelectedPolicy();
             System.out.println(selectedPolicy.getPolicyDetails());
+
+        } catch (PolicyNotFoundException | PolicyBusinessException e) {
+            printRefusal(e);
+        }
+    }
+
+    private void handleShowPremium() {
+
+        try {
+
+            PolicyDetail selectedPolicy = readSelectedPolicy();
+            System.out.println("Premium: " + noClaimCalculator.calculatePremium(selectedPolicy));
 
         } catch (PolicyNotFoundException | PolicyBusinessException e) {
             printRefusal(e);
@@ -667,31 +674,38 @@ public class PremiumCalculatorApp {
         System.out.println("\nSeed data loaded: " + register.size() + " policies");
     }
 
-    // NEW: Stream query handlers for Assignment 8
 
-    private void handleFindByPolicyNumber() {
+    private void handleFindSimilarPolicyHolders() {
 
-        String number = readLine("Enter Policy Number : ");
-        Optional<PolicyDetail> optionalPolicy = register.findByPolicyNumber(number);
+        try {
 
-        optionalPolicy.ifPresentOrElse(
-                policy -> System.out.println(policy.getPolicyDetails()),
-                () -> System.out.println("No policy found with number: " + number)
-        );
-    }
+            PolicyDetail selectedPolicy = readSelectedPolicy();
+            String customerName = selectedPolicy.getCustomer().getCustomerName();
 
-    private void handleFindByCustomerName() {
+            List<PolicyDetail> similarPolicies = register.findSimilarPolicyHolders(
+                    selectedPolicy.getPolicyNum()
+            );
 
-        String customerName = readLine("Enter Customer Name : ");
-        List<PolicyDetail> policies = register.findByCustomerName(customerName);
+            if (similarPolicies.isEmpty()) {
+                System.out.println(
+                        "No other customers share the same vehicle-type pattern as "
+                                + customerName
+                );
+                return;
+            }
 
-        if (policies.isEmpty()) {
-            System.out.println("No policies found for customer: " + customerName);
-            return;
+            System.out.println(
+                    "\nOther customers with the same vehicle-type pattern as "
+                            + customerName + ":"
+            );
+
+            for (PolicyDetail policy : similarPolicies) {
+                System.out.println(policy.getPolicyDetails());
+            }
+
+        } catch (PolicyNotFoundException | PolicyBusinessException e) {
+            printRefusal(e);
         }
-
-        System.out.println("\nPolicies for " + customerName + ":");
-        policies.forEach(policy -> System.out.println(policy.getPolicyDetails()));
     }
 
     private void handleTotalPremiumForVehicleType() {
@@ -755,38 +769,5 @@ public class PremiumCalculatorApp {
                         + " | Claims: " + policy.getPreviousClaimCount()
                         + " -> " + noClaimCalculator.calculatePremium(policy))
         );
-    }
-
-    private void handleFindSimilarPolicyHolders() {
-
-        try {
-
-            PolicyDetail selectedPolicy = readSelectedPolicy();
-            String customerName = selectedPolicy.getCustomer().getCustomerName();
-
-            List<PolicyDetail> similarPolicies = register.findSimilarPolicyHolders(
-                    selectedPolicy.getPolicyNum()
-            );
-
-            if (similarPolicies.isEmpty()) {
-                System.out.println(
-                        "No other customers share the same vehicle-type pattern as "
-                                + customerName
-                );
-                return;
-            }
-
-            System.out.println(
-                    "\nOther customers with the same vehicle-type pattern as "
-                            + customerName + ":"
-            );
-
-            for (PolicyDetail policy : similarPolicies) {
-                System.out.println(policy.getPolicyDetails());
-            }
-
-        } catch (PolicyNotFoundException | PolicyBusinessException e) {
-            printRefusal(e);
-        }
     }
 }
