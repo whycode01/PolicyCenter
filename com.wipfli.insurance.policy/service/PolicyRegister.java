@@ -27,6 +27,12 @@ public class PolicyRegister {
     private final Map<VehicleType, List<PolicyDetail>> policiesByVehicleType = new EnumMap<>(VehicleType.class);
     private final TreeMap<LocalDate, List<PolicyDetail>> policiesByExpiryDate = new TreeMap<>();
 
+    private final PremiumCalculable premiumCalculator;
+
+    public PolicyRegister(PremiumCalculable premiumCalculator) {
+        this.premiumCalculator = premiumCalculator;
+    }
+
     //policy numbers are unique
     public void add(PolicyDetail policy) {
 
@@ -150,7 +156,7 @@ public class PolicyRegister {
     }
 
 
-    public Map<VehicleType, Double> totalPremiumByVehicleType(PremiumCalculable calculator) {
+    public Map<VehicleType, Double> totalPremiumByVehicleType() {
 
         Map<VehicleType, Double> totals = new EnumMap<>(VehicleType.class);
 
@@ -159,7 +165,7 @@ public class PolicyRegister {
             double total = 0.0;
 
             for (PolicyDetail policy : entry.getValue()) {
-                total += calculator.calculatePremium(policy);
+                total += premiumCalculator.calculatePremium(policy);
             }
 
             totals.put(entry.getKey(), total);
@@ -181,10 +187,10 @@ public class PolicyRegister {
                 .collect(Collectors.toList());
     }
 
-    public double totalPremiumForVehicleType(VehicleType vehicleType, PremiumCalculable calculator) {
+    public double totalPremiumForVehicleType(VehicleType vehicleType) {
         return policiesByNumber.values().stream()
                 .filter(policy -> policy.getVehicleType() == vehicleType)
-                .mapToDouble(calculator::calculatePremium)
+                .mapToDouble(premiumCalculator::calculatePremium)
                 .sum();
     }
 
@@ -211,9 +217,9 @@ public class PolicyRegister {
                 .map(Map.Entry::getKey);
     }
 
-    public List<PolicyDetail> top5ByPremium(PremiumCalculable calculator) {
+    public List<PolicyDetail> top5ByPremium() {
         return policiesByNumber.values().stream()
-                .sorted(Comparator.comparingDouble(calculator::calculatePremium).reversed())
+                .sorted(Comparator.comparingDouble(premiumCalculator::calculatePremium).reversed())
                 .limit(5)
                 .collect(Collectors.toList());
     }
