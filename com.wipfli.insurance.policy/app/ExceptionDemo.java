@@ -2,16 +2,14 @@ package app;
 
 import model.Customer;
 import model.PolicyDetail;
-import model.CarPolicy;
-import model.TruckPolicy;
-
 import service.PolicyRegister;
+import service.PolicyFactory;
 import service.PremiumCalculable;
 import service.StandardPremiumCalculator;
 
-import exception.InvalidPolicyDataException;
 import exception.PolicyBusinessException;
 import exception.PolicyNotFoundException;
+import exception.InvalidPolicyDataException;
 
 import java.time.LocalDate;
 
@@ -19,9 +17,8 @@ public class ExceptionDemo {
 
     public static void main(String[] args) {
 
-        PolicyRegister register = new PolicyRegister();
-
         PremiumCalculable calculator = new StandardPremiumCalculator();
+        PolicyRegister register = new PolicyRegister(calculator);
 
         // Injected "today" so renewal-window results are reproducible,
         // independent of the real system date.
@@ -34,7 +31,7 @@ public class ExceptionDemo {
         // 1) A GOOD policy: created, registered, and priced
         try {
 
-            carPolicy = new CarPolicy(
+            carPolicy = PolicyFactory.createCarPolicy(
                     "POL-1001",
                     new Customer("Ravi", 22),
                     1,                              // claims history
@@ -57,7 +54,7 @@ public class ExceptionDemo {
         // 2) A 19-year-old TRUCK driver: refused (truck-only rule)
         try {
 
-            TruckPolicy badTruck = new TruckPolicy(
+            PolicyDetail badTruck = PolicyFactory.createTruckPolicy(
                     "POL-1002",
                     new Customer("Imran", 19),
                     0,

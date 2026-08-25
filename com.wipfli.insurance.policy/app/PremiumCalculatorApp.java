@@ -3,11 +3,9 @@ package app;
 import model.Customer;
 import model.PolicyDetail;
 import model.VehicleType;
-import model.CarPolicy;
-import model.BikePolicy;
-import model.TruckPolicy;
 import service.PolicyValidator;
 import service.PolicyRegister;
+import service.PolicyFactory;
 import service.PremiumCalculable;
 import service.StandardPremiumCalculator;
 import service.NoClaimBonusCalculator;
@@ -30,9 +28,15 @@ public class PremiumCalculatorApp {
 
     private final Scanner scanner = new Scanner(System.in);
     private final PolicyValidator validator = new PolicyValidator();
-    private final PolicyRegister register = new PolicyRegister();
-    private final PremiumCalculable standardCalculator = new StandardPremiumCalculator();
-    private final PremiumCalculable noClaimCalculator = new NoClaimBonusCalculator();
+    private final PolicyRegister register;
+    private final PremiumCalculable standardCalculator;
+    private final PremiumCalculable noClaimCalculator;
+
+    public PremiumCalculatorApp() {
+        this.standardCalculator = new StandardPremiumCalculator();
+        this.noClaimCalculator = new NoClaimBonusCalculator(standardCalculator);
+        this.register = new PolicyRegister(noClaimCalculator);
+    }
 
     public static void main(String[] args) {
         new PremiumCalculatorApp().run();
@@ -308,7 +312,7 @@ public class PremiumCalculatorApp {
             case CAR:
 
                 String registrationNumber = readLine("Registration Number : ");
-                return new CarPolicy(
+                return PolicyFactory.createCarPolicy(
                         policyNum,
                         customer,
                         previousClaims,
@@ -319,7 +323,7 @@ public class PremiumCalculatorApp {
             case BIKE:
 
                 int engineCC = readEngineCC(policyNum);
-                return new BikePolicy(
+                return PolicyFactory.createBikePolicy(
                         policyNum,
                         customer,
                         previousClaims,
@@ -330,7 +334,7 @@ public class PremiumCalculatorApp {
             case TRUCK:
 
                 double loadCapacity = readLoadCapacity(policyNum);
-                return new TruckPolicy(
+                return PolicyFactory.createTruckPolicy(
                         policyNum,
                         customer,
                         previousClaims,
@@ -524,7 +528,7 @@ public class PremiumCalculatorApp {
 
     private void handleViewSummary() {
 
-        Map<VehicleType, Double> summary = register.totalPremiumByVehicleType(standardCalculator);
+        Map<VehicleType, Double> summary = register.totalPremiumByVehicleType();
 
         System.out.println("\n========== PREMIUM SUMMARY BY VEHICLE TYPE ==========");
 
@@ -612,7 +616,7 @@ public class PremiumCalculatorApp {
 
     private void seedData() {
 
-        register.add(new CarPolicy(
+        register.add(PolicyFactory.createCarPolicy(
                 "POL-2001",
                 new Customer("Ravi Kumar", 22),
                 1,
@@ -620,7 +624,7 @@ public class PremiumCalculatorApp {
                 "KA-05-1234"
         ));
 
-        register.add(new TruckPolicy(
+        register.add(PolicyFactory.createTruckPolicy(
                 "POL-2002",
                 new Customer("Ravi Kumar", 22),
                 0,
@@ -628,7 +632,7 @@ public class PremiumCalculatorApp {
                 12.5
         ));
 
-        register.add(new BikePolicy(
+        register.add(PolicyFactory.createBikePolicy(
                 "POL-2003",
                 new Customer("Meena Iyer", 34),
                 2,
@@ -636,7 +640,7 @@ public class PremiumCalculatorApp {
                 150
         ));
 
-        register.add(new CarPolicy(
+        register.add(PolicyFactory.createCarPolicy(
                 "POL-2004",
                 new Customer("Ajay Verma", 41),
                 0,
@@ -644,7 +648,7 @@ public class PremiumCalculatorApp {
                 "MH-12-5678"
         ));
 
-        register.add(new BikePolicy(
+        register.add(PolicyFactory.createBikePolicy(
                 "POL-2005",
                 new Customer("Sneha Rao", 29),
                 0,
@@ -652,7 +656,7 @@ public class PremiumCalculatorApp {
                 125
         ));
 
-        register.add(new CarPolicy(
+        register.add(PolicyFactory.createCarPolicy(
                 "POL-2006",
                 new Customer("Ravi Kumar", 22),
                 3,
@@ -693,7 +697,7 @@ public class PremiumCalculatorApp {
     private void handleTotalPremiumForVehicleType() {
 
         VehicleType vehicleType = readVehicleTypeForLookup();
-        double total = register.totalPremiumForVehicleType(vehicleType, noClaimCalculator);
+        double total = register.totalPremiumForVehicleType(vehicleType);
         System.out.println(vehicleType + ": " + total);
     }
 
@@ -741,12 +745,7 @@ public class PremiumCalculatorApp {
 
     private void handleTop5ByPremium() {
 
-        PremiumCalculable effectiveCalculator = policy ->
-                policy.getPreviousClaimCount() == 0
-                        ? noClaimCalculator.calculatePremium(policy)
-                        : standardCalculator.calculatePremium(policy);
-
-        List<PolicyDetail> top5 = register.top5ByPremium(effectiveCalculator);
+        List<PolicyDetail> top5 = register.top5ByPremium();
 
         System.out.println("\n========== TOP 5 PREMIUMS ==========");
         top5.forEach(policy ->
@@ -754,7 +753,7 @@ public class PremiumCalculatorApp {
                         + " | " + policy.getCustomer().getCustomerName()
                         + " | " + policy.getVehicleType()
                         + " | Claims: " + policy.getPreviousClaimCount()
-                        + " -> " + effectiveCalculator.calculatePremium(policy))
+                        + " -> " + noClaimCalculator.calculatePremium(policy))
         );
     }
 
