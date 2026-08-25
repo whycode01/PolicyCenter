@@ -31,6 +31,7 @@ class PolicyRegisterTest {
         Optional<PolicyDetail> hit = register.findByPolicyNumber("POL-2001");
         Optional<PolicyDetail> miss = register.findByPolicyNumber("POL-9999");
 
+
         assertTrue(hit.isPresent());
         assertEquals("POL-2001", hit.get().getPolicyNum());
         assertTrue(miss.isEmpty());

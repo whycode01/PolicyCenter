@@ -1,6 +1,7 @@
 package service;
 
-import exception.InvalidPolicyDataException;
+import
+        exception.InvalidPolicyDataException;
 import fixtures.TestFixtures;
 import model.CarPolicy;
 import model.Customer;
