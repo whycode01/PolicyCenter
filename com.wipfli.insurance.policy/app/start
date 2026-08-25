@@ -1,0 +1,10 @@
+$jdk = "C:\Users\MishraG\Downloads\openjdk-17.0.2_windows-x64_bin\jdk-17.0.2"; `
+$root = "C:\Users\MishraG\IdeaProjects\premium"; `
+$src = "$root\com.wipfli.insurance.policy"; `
+$lib = "$root\lib\junit-platform-console-standalone-1.11.4.jar"; `
+$out = "$root\out"; `
+Remove-Item -Recurse -Force $out -ErrorAction SilentlyContinue; `
+New-Item -ItemType Directory -Path $out | Out-Null; `
+Get-ChildItem -Path $src -Recurse -Filter *.java | ForEach-Object { $_.FullName } | Set-Content -Path "$out\sources.txt"; `
+& "$jdk\bin\javac.exe" -cp $lib -d $out "@$out\sources.txt"; `
+& "$jdk\bin\java.exe" -jar $lib --class-path $out --scan-classpath
