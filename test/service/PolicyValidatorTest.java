@@ -3,7 +3,7 @@ package service;
 import
         exception.InvalidPolicyDataException;
 import fixtures.TestFixtures;
-import model.CarPolicy;
+import service.PolicyFactory;
 import model.Customer;
 import model.PolicyDetail;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +37,7 @@ class PolicyValidatorTest {
 
     @Test
     void emptyPolicyNumber_throwsInvalidPolicyDataException() {
-        PolicyDetail policy = new CarPolicy(
+        PolicyDetail policy = PolicyFactory.createCarPolicy(
                 "   ",
                 new Customer("Test", 30),
                 0,

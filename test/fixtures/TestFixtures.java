@@ -1,11 +1,11 @@
 package fixtures;
 
-import model.CarPolicy;
-import model.BikePolicy;
-import model.TruckPolicy;
-import model.Customer;
 import model.PolicyDetail;
+import model.Customer;
 import service.PolicyRegister;
+import service.PolicyFactory;
+import service.PremiumCalculable;
+import service.StandardPremiumCalculator;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -39,8 +39,8 @@ public final class TestFixtures {
         return new Customer("Sneha Rao", 29);
     }
 
-    public static CarPolicy pol2001() {
-        return new CarPolicy(
+    public static PolicyDetail pol2001() {
+        return PolicyFactory.createCarPolicy(
                 "POL-2001",
                 raviKumar(),
                 1,
@@ -49,8 +49,8 @@ public final class TestFixtures {
         );
     }
 
-    public static TruckPolicy pol2002() {
-        return new TruckPolicy(
+    public static PolicyDetail pol2002() {
+        return PolicyFactory.createTruckPolicy(
                 "POL-2002",
                 raviKumar(),
                 0,
@@ -59,8 +59,8 @@ public final class TestFixtures {
         );
     }
 
-    public static BikePolicy pol2003() {
-        return new BikePolicy(
+    public static PolicyDetail pol2003() {
+        return PolicyFactory.createBikePolicy(
                 "POL-2003",
                 meenaIyer(),
                 2,
@@ -69,8 +69,8 @@ public final class TestFixtures {
         );
     }
 
-    public static CarPolicy pol2004() {
-        return new CarPolicy(
+    public static PolicyDetail pol2004() {
+        return PolicyFactory.createCarPolicy(
                 "POL-2004",
                 ajayVerma(),
                 0,
@@ -79,8 +79,8 @@ public final class TestFixtures {
         );
     }
 
-    public static BikePolicy pol2005() {
-        return new BikePolicy(
+    public static PolicyDetail pol2005() {
+        return PolicyFactory.createBikePolicy(
                 "POL-2005",
                 snehaRao(),
                 0,
@@ -89,8 +89,8 @@ public final class TestFixtures {
         );
     }
 
-    public static CarPolicy pol2006() {
-        return new CarPolicy(
+    public static PolicyDetail pol2006() {
+        return PolicyFactory.createCarPolicy(
                 "POL-2006",
                 raviKumar(),
                 3,
@@ -110,11 +110,15 @@ public final class TestFixtures {
         );
     }
 
-    public static PolicyRegister seededRegister() {
-        PolicyRegister register = new PolicyRegister();
+    public static PolicyRegister seededRegister(PremiumCalculable calculator) {
+        PolicyRegister register = new PolicyRegister(calculator);
         for (PolicyDetail policy : allPolicies()) {
             register.add(policy);
         }
         return register;
+    }
+
+    public static PolicyRegister seededRegister() {
+        return seededRegister(new StandardPremiumCalculator());
     }
 }

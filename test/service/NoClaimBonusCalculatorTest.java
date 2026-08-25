@@ -14,8 +14,8 @@ class NoClaimBonusCalculatorTest {
 
     @BeforeEach
     void setUp() {
-        calculator = new NoClaimBonusCalculator();
         standardCalculator = new StandardPremiumCalculator();
+        calculator = new NoClaimBonusCalculator(standardCalculator);
     }
 
     @Test
@@ -34,4 +34,3 @@ class NoClaimBonusCalculatorTest {
         assertEquals(standardPremium, premium, 0.01);
     }
 }
-
