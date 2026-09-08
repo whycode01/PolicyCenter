@@ -11,7 +11,7 @@ import java.time.LocalDate;
 public final class PolicyFactory {
 
     private PolicyFactory() {
-        // utility class
+        // private constructor to prevent instantiation
     }
 
     public static PolicyDetail createCarPolicy(String policyNum,
@@ -23,18 +23,6 @@ public final class PolicyFactory {
                 policyNum,
                 customer,
                 previousClaimCount,
-                expiryDate,
-                registrationNumber
-        );
-    }
-
-    public static PolicyDetail createCarPolicy(String policyNum,
-                                               Customer customer,
-                                               LocalDate expiryDate,
-                                               String registrationNumber) {
-        return new CarPolicy(
-                policyNum,
-                customer,
                 expiryDate,
                 registrationNumber
         );
@@ -54,17 +42,7 @@ public final class PolicyFactory {
         );
     }
 
-    public static PolicyDetail createTruckPolicy(String policyNum,
-                                                 Customer customer,
-                                                 LocalDate expiryDate,
-                                                 double loadCapacityTons) {
-        return new TruckPolicy(
-                policyNum,
-                customer,
-                expiryDate,
-                loadCapacityTons
-        );
-    }
+
 
     public static PolicyDetail createBikePolicy(String policyNum,
                                                 Customer customer,
@@ -80,16 +58,7 @@ public final class PolicyFactory {
         );
     }
 
-    public static PolicyDetail createBikePolicy(String policyNum,
-                                                Customer customer,
-                                                LocalDate expiryDate,
-                                                int engineCC) {
-        return new BikePolicy(
-                policyNum,
-                customer,
-                expiryDate,
-                engineCC
-        );
-    }
+
+
 }
 

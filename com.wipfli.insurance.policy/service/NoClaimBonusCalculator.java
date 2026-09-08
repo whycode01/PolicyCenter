@@ -9,6 +9,7 @@ public class NoClaimBonusCalculator implements PremiumCalculable {
     private final PremiumCalculable wrappedCalculator;
 
     public NoClaimBonusCalculator(PremiumCalculable wrappedCalculator) {
+
         this.wrappedCalculator = wrappedCalculator;
     }
 
