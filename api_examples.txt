@@ -1,0 +1,117 @@
+Policy Management System - REST API Examples
+==========================================
+
+Important: Do not reuse the same policy number. If you already created a policy with a number,
+Spring will return HTTP 409 because your app rejects duplicate policy numbers.
+
+Use the following working PowerShell pattern:
+
+$body = @'
+{"policyNum":"CAR-1009","customerName":"Amit","customerAge":32,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH12AB1234"}
+'@
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/car" -ContentType "application/json" -Body $body
+
+1) CREATE CAR POLICY
+$body = @'
+{"policyNum":"CAR-1009","customerName":"Amit","customerAge":32,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH12AB1234"}
+'@
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/car" -ContentType "application/json" -Body $body
+
+2) CREATE BIKE POLICY
+$body = @'
+{"policyNum":"BIKE-2009","customerName":"Neha","customerAge":27,"previousClaimCount":1,"expiryDate":"2026-11-15","engineCC":150}
+'@
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/bike" -ContentType "application/json" -Body $body
+
+3) CREATE TRUCK POLICY
+$body = @'
+{"policyNum":"TRUCK-3009","customerName":"Rohan","customerAge":35,"previousClaimCount":2,"expiryDate":"2026-10-20","loadCapacityTons":12.5}
+'@
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/truck" -ContentType "application/json" -Body $body
+
+4) GET POLICY BY NUMBER
+Invoke-RestMethod -Uri "http://localhost:8080/api/policies/CAR-1009" -Method Get
+
+5) LIST ALL POLICIES
+Invoke-RestMethod -Uri "http://localhost:8080/api/policies" -Method Get
+
+6) CALCULATE PREMIUM
+Invoke-RestMethod -Uri "http://localhost:8080/api/policies/CAR-1009/premium" -Method Get
+
+7) RECORD CLAIM
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/CAR-1009/claim"
+
+8) EXPIRE POLICY
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/CAR-1009/expire"
+
+9) RENEW POLICY
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/CAR-1009/renew"
+
+10) NOT FOUND EXAMPLE
+Invoke-RestMethod -Uri "http://localhost:8080/api/policies/UNKNOWN-999" -Method Get
+
+11) DUPLICATE POLICY NUMBER EXAMPLE
+# Reuse an existing policy number to trigger 409 Conflict
+$body = @'
+{"policyNum":"CAR-1009","customerName":"Another User","customerAge":30,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH99ZZ9999"}
+'@
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/car" -ContentType "application/json" -Body $body
+
+12) INVALID POLICY DATA EXAMPLE
+$body = @'
+{"policyNum":"TRUCK-INVALID","customerName":"Junior","customerAge":18,"previousClaimCount":0,"expiryDate":"2026-12-31","loadCapacityTons":5.0}
+'@
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/truck" -ContentType "application/json" -Body $body
+
+13) ILLEGAL STATUS CHANGE EXAMPLE
+# Try expire after it is already expired
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/CAR-1009/expire"
+
+14) RENEWAL NOT ALLOWED EXAMPLE
+# Use a policy that is not in the renewal window or has too many claims
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/CAR-1009/renew"
+
+15) SAMPLE POLICY NUMBERS TO USE
+CAR-1009
+BIKE-2009
+TRUCK-3009
+CAR-1010
+BIKE-2010
+TRUCK-3010
+
+16) PowerShell notes
+- Use `Invoke-RestMethod` or `curl.exe`, not plain `curl` inside PowerShell.
+- Use a here-string (`@' ... '@`) to keep JSON valid.
+- If you get HTTP 409, it means the policy number already exists. Change to a new unique number.
+
+17) Example response body from a successful create
+{
+  "policyNum": "CAR-1009",
+  "customerName": "Amit",
+  "customerAge": 32,
+  "vehicleType": "CAR",
+  "previousClaimCount": 0,
+  "status": "ACTIVE",
+  "expiryDate": "2026-12-31"
+}
+
+18) Example premium response
+{
+  "standardPremium": 500.0,
+  "discountedPremium": 450.0
+}
+
+19) Example error response
+{
+  "policyNumber": "UNKNOWN-999",
+  "message": "no policy with this number"
+}
+
+20) Alternate curl.exe form
+curl.exe -i -X POST "http://localhost:8080/api/policies/car" -H "Content-Type: application/json" -d '{"policyNum":"CAR-1009","customerName":"Amit","customerAge":32,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH12AB1234"}'
+
+Why your last request failed:
+- The 409 Conflict means the API is working correctly.
+- CAR-1001 already existed in memory from an earlier request.
+- The app intentionally rejects duplicate policy numbers.
