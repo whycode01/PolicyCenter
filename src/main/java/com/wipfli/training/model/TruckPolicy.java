@@ -3,12 +3,25 @@ package com.wipfli.training.model;
 import com.wipfli.training.exception.InvalidPolicyDataException;
 import java.time.LocalDate;                         // CHANGE: needed for expiryDate
 
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("TRUCK")
 public class TruckPolicy extends PolicyDetail {
 
-    private double loadCapacityTons;
+    // Wrapper type + nullable: CAR and BIKE rows share this table and have NULL here.
+    // A primitive double cannot hold NULL when Hibernate reads another type's row.
+    @Column(name = "load_capacity_tons", nullable = true)
+    private Double loadCapacityTons;
 
     // CHANGE: minimum truck driver age lives HERE, because the rule is truck-only
     private static final int MINIMUM_TRUCK_DRIVER_AGE = 21;
+
+    // Required by Hibernate - it instantiates the entity, then fills the fields
+    protected TruckPolicy() {
+    }
 
     // Constructor WITH claims history
     public TruckPolicy(String policyNum,
@@ -65,7 +78,7 @@ public class TruckPolicy extends PolicyDetail {
         }
     }
 
-    public double getLoadCapacityTons() {
+    public Double getLoadCapacityTons() {
         return loadCapacityTons;
     }
 

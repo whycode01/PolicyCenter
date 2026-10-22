@@ -2,9 +2,21 @@ package com.wipfli.training.model;
 
 import java.time.LocalDate;   // CHANGE: needed for expiryDate
 
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("CAR")
 public class CarPolicy extends PolicyDetail {
 
+    // Nullable: BIKE and TRUCK rows share this table and have no registration number
+    @Column(name = "registration_number", nullable = true)
     private String registrationNumber;
+
+    // Required by Hibernate - it instantiates the entity, then fills the fields
+    protected CarPolicy() {
+    }
 
     // Constructor WITH claims history
     public CarPolicy(String policyNum,

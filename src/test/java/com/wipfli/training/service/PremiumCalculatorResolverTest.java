@@ -6,12 +6,12 @@ import com.wipfli.training.model.CarPolicy;
 import com.wipfli.training.model.Customer;
 import com.wipfli.training.model.PolicyDetail;
 import com.wipfli.training.model.VehicleType;
-import com.wipfli.training.repository.InMemoryPolicyRepository;
 import com.wipfli.training.repository.PolicyRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -32,7 +32,7 @@ class PremiumCalculatorResolverTest {
     void zeroClaimsSelectsNoClaimBonusCalculator() {
         PolicyDetail policy = new CarPolicy(
                 "CAR-100",
-                new Customer("Amit", 32),
+                new Customer("CUST-100", "Amit", 32),
                 0,
                 LocalDate.now().plusDays(60),
                 "MH12AB1234"
@@ -45,7 +45,7 @@ class PremiumCalculatorResolverTest {
     void oneClaimSelectsStandardCalculator() {
         PolicyDetail policy = new CarPolicy(
                 "CAR-101",
-                new Customer("Amit", 32),
+                new Customer("CUST-101", "Amit", 32),
                 1,
                 LocalDate.now().plusDays(60),
                 "MH12AB1234"
@@ -58,7 +58,7 @@ class PremiumCalculatorResolverTest {
     void decoratorAppliesDiscountOnceForZeroClaims() {
         PolicyDetail policy = new CarPolicy(
                 "CAR-102",
-                new Customer("Amit", 32),
+                new Customer("CUST-102", "Amit", 32),
                 0,
                 LocalDate.now().plusDays(60),
                 "MH12AB1234"
@@ -84,7 +84,7 @@ class PremiumCalculatorResolverTest {
     void incompletePolicyDataIsRejectedExplicitly() {
         PolicyDetail policy = new CarPolicy(
                 null,
-                new Customer("Amit", 32),
+                new Customer("CUST-NULL", "Amit", 32),
                 0,
                 LocalDate.now().plusDays(60),
                 "MH12AB1234"
@@ -106,13 +106,13 @@ class PremiumCalculatorResolverTest {
 
         PolicyDetail policy = new CarPolicy(
                 "CAR-103",
-                new Customer("Amit", 32),
+                new Customer("CUST-103", "Amit", 32),
                 0,
                 LocalDate.now().plusDays(60),
                 "MH12AB1234"
         );
 
-        when(repository.findAll()).thenReturn(Collections.singletonList(policy));
+        when(repository.findByVehicleType(VehicleType.CAR)).thenReturn(Collections.singletonList(policy));
         when(resolverMock.resolve(policy)).thenReturn(selectedCalculator);
         when(selectedCalculator.calculatePremium(policy)).thenReturn(450.0);
 
@@ -124,7 +124,8 @@ class PremiumCalculatorResolverTest {
 
     @Test
     void missingPolicyNumberProducesNotFoundException() {
-        PolicyRepository repository = new InMemoryPolicyRepository();
+        PolicyRepository repository = mock(PolicyRepository.class);
+        when(repository.findById("MISSING-123")).thenReturn(Optional.empty());
         PolicyRegister policyRegister = new PolicyRegister(resolver, repository);
 
         PolicyNotFoundException exception = assertThrows(

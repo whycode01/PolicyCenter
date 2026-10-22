@@ -5,6 +5,7 @@ import java.time.LocalDate;
 public class BikePolicyRequestDTO {
 
     private String policyNum;
+    private String customerId;
     private String customerName;
     private int customerAge;
     private int previousClaimCount;
@@ -16,6 +17,7 @@ public class BikePolicyRequestDTO {
 
     public BikePolicyRequestDTO(
             String policyNum,
+            String customerId,
             String customerName,
             int customerAge,
             int previousClaimCount,
@@ -23,6 +25,7 @@ public class BikePolicyRequestDTO {
             int engineCC) {
 
         this.policyNum = policyNum;
+        this.customerId = customerId;
         this.customerName = customerName;
         this.customerAge = customerAge;
         this.previousClaimCount = previousClaimCount;
@@ -36,6 +39,14 @@ public class BikePolicyRequestDTO {
 
     public void setPolicyNum(String policyNum) {
         this.policyNum = policyNum;
+    }
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
     }
 
     public String getCustomerName() {

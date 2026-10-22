@@ -4,44 +4,83 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
-// CHANGE: import your custom exceptions (no more generic exceptions)
 import com.wipfli.training.exception.IllegalStatusChangeException;
 import com.wipfli.training.exception.InvalidPolicyDataException;
 import com.wipfli.training.exception.RenewalNotAllowedException;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.DiscriminatorType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+
+@Entity
+@Table(name = "policy")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "policy_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class PolicyDetail {
 
     public abstract String getPolicyDetails();
 
-    private final String policyNum;
+
+    @Id
+    @Column(name = "policy_num", updatable = false, nullable = false)
+    private String policyNum;
+
+
+    @ManyToOne(optional = false, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinColumn(name = "customer_user_id",nullable = false)
     private Customer customer;
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_type", nullable = false)
     private VehicleType vehicleType;
+
+    @Column(name = "previous_claim_count", nullable = false)
     private int previousClaimCount;
+
+    // Stores "ACTIVE" / "EXPIRED" / "RENEWED" as text.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private PolicyStatus status;
 
-    // CHANGE: every policy now has an expiry date
-    private final LocalDate expiryDate;
+    // 'final' removed for the same reason as policyNum. There is still no setter.
+    @Column(name = "expiry_date", nullable = false)
+    private LocalDate expiryDate;
 
-    // CHANGE: renewal window is a shared business constant
+    // static fields are ignored by JPA, so these are not columns
     private static final int RENEWAL_WINDOW_DAYS = 30;
-
-    // CHANGE: claims cap constant
     private static final int CLAIMS_CAP = 3;
 
-    // Constructor with claims history
-    // CHANGE: now takes expiryDate and validates it
+
+    protected PolicyDetail() {
+    }
+
     public PolicyDetail(String policyNum,
                         Customer customer,
                         VehicleType vehicleType,
                         int previousClaimCount,
                         LocalDate expiryDate) {
 
-        // CHANGE: expiry cannot be missing; date-past checks use the fixed reference date in tests
         if (expiryDate == null) {
             throw new InvalidPolicyDataException(
                     policyNum,
                     "expiry date is missing"
             );
+        }
+
+        if (customer == null) {
+            throw new InvalidPolicyDataException(policyNum, "customer is missing");
         }
 
         this.policyNum = policyNum;
@@ -52,20 +91,12 @@ public abstract class PolicyDetail {
         this.status = PolicyStatus.ACTIVE;
     }
 
-    // Overloaded constructor (no claim history)
-    // CHANGE: also takes expiryDate now
     public PolicyDetail(String policyNum,
                         Customer customer,
                         VehicleType vehicleType,
                         LocalDate expiryDate) {
 
-        this(
-                policyNum,
-                customer,
-                vehicleType,
-                0,
-                expiryDate
-        );
+        this(policyNum, customer, vehicleType, 0, expiryDate);
     }
 
     public String getPolicyNum() {
@@ -88,16 +119,13 @@ public abstract class PolicyDetail {
         return status;
     }
 
-    // CHANGE: getter for the new field
     public LocalDate getExpiryDate() {
         return expiryDate;
     }
 
-    // CHANGE: helper now throws YOUR exception instead of IllegalStateException
     private void ensureActive(String action) {
 
         if (status != PolicyStatus.ACTIVE) {
-
             throw new IllegalStatusChangeException(
                     policyNum,
                     "cannot " + action + " a policy that is " + status
@@ -105,23 +133,17 @@ public abstract class PolicyDetail {
         }
     }
 
-    // CHANGE: throws IllegalStatusChangeException (not IllegalStateException)
     public void expire() {
 
         ensureActive("expire");
-
         status = PolicyStatus.EXPIRED;
     }
 
-    // CHANGE: renew() now takes today's date and enforces the two new rules
     public void renew(LocalDate today) {
 
-        // Rule: must still be ACTIVE
         ensureActive("renew");
 
-        // Rule: claims cap — 3 or more must go to underwriting
         if (previousClaimCount >= CLAIMS_CAP) {
-
             throw new RenewalNotAllowedException(
                     policyNum,
                     previousClaimCount
@@ -131,13 +153,10 @@ public abstract class PolicyDetail {
             );
         }
 
-        // Rule: renewal window — only in the last 30 days before expiry
         LocalDate renewalOpens = expiryDate.minusDays(RENEWAL_WINDOW_DAYS);
 
         if (today.isBefore(renewalOpens)) {
-
             long daysEarly = ChronoUnit.DAYS.between(today, renewalOpens);
-
             throw new RenewalNotAllowedException(
                     policyNum,
                     "renewal opens on " + renewalOpens
@@ -166,7 +185,8 @@ public abstract class PolicyDetail {
 
         PolicyDetail other = (PolicyDetail) obj;
 
-        return policyNum.equals(other.policyNum);
+
+        return Objects.equals(policyNum, other.getPolicyNum());
     }
 
     @Override

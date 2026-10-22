@@ -2,9 +2,22 @@ package com.wipfli.training.model;
 
 import java.time.LocalDate;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("BIKE")
 public class BikePolicy extends PolicyDetail {
 
-    private int engineCC;
+    // Wrapper type + nullable: CAR and TRUCK rows share this table and have NULL here.
+    // A primitive int cannot hold NULL when Hibernate reads another type's row.
+    @Column(name = "engine_cc", nullable = true)
+    private Integer engineCC;
+
+    // Required by Hibernate - it instantiates the entity, then fills the fields
+    protected BikePolicy() {
+    }
 
     // Constructor WITH claims history
     public BikePolicy(String policyNum,
@@ -40,7 +53,7 @@ public class BikePolicy extends PolicyDetail {
         this.engineCC = engineCC;
     }
 
-    public int getEngineCC() {
+    public Integer getEngineCC() {
         return engineCC;
     }
 

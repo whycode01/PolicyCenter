@@ -7,26 +7,26 @@ Spring will return HTTP 409 because your app rejects duplicate policy numbers.
 Use the following working PowerShell pattern:
 
 $body = @'
-{"policyNum":"CAR-1009","customerName":"Amit","customerAge":32,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH12AB1234"}
+{"policyNum":"CAR-1009","customerId":"CUST-001","customerName":"Amit","customerAge":32,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH12AB1234"}
 '@
 
 Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/car" -ContentType "application/json" -Body $body
 
 1) CREATE CAR POLICY
 $body = @'
-{"policyNum":"CAR-1009","customerName":"Amit","customerAge":32,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH12AB1234"}
+{"policyNum":"CAR-1009","customerId":"CUST-001","customerName":"Amit","customerAge":32,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH12AB1234"}
 '@
 Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/car" -ContentType "application/json" -Body $body
 
 2) CREATE BIKE POLICY
 $body = @'
-{"policyNum":"BIKE-2009","customerName":"Neha","customerAge":27,"previousClaimCount":1,"expiryDate":"2026-11-15","engineCC":150}
+{"policyNum":"BIKE-2009","customerId":"CUST-002","customerName":"Neha","customerAge":27,"previousClaimCount":1,"expiryDate":"2026-11-15","engineCC":150}
 '@
 Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/bike" -ContentType "application/json" -Body $body
 
 3) CREATE TRUCK POLICY
 $body = @'
-{"policyNum":"TRUCK-3009","customerName":"Rohan","customerAge":35,"previousClaimCount":2,"expiryDate":"2026-10-20","loadCapacityTons":12.5}
+{"policyNum":"TRUCK-3009","customerId":"CUST-003","customerName":"Rohan","customerAge":35,"previousClaimCount":2,"expiryDate":"2026-10-20","loadCapacityTons":12.5}
 '@
 Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/truck" -ContentType "application/json" -Body $body
 
@@ -54,13 +54,13 @@ Invoke-RestMethod -Uri "http://localhost:8080/api/policies/UNKNOWN-999" -Method 
 11) DUPLICATE POLICY NUMBER EXAMPLE
 # Reuse an existing policy number to trigger 409 Conflict
 $body = @'
-{"policyNum":"CAR-1009","customerName":"Another User","customerAge":30,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH99ZZ9999"}
+{"policyNum":"CAR-1009","customerId":"CUST-004","customerName":"Another User","customerAge":30,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH99ZZ9999"}
 '@
 Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/car" -ContentType "application/json" -Body $body
 
 12) INVALID POLICY DATA EXAMPLE
 $body = @'
-{"policyNum":"TRUCK-INVALID","customerName":"Junior","customerAge":18,"previousClaimCount":0,"expiryDate":"2026-12-31","loadCapacityTons":5.0}
+{"policyNum":"TRUCK-INVALID","customerId":"CUST-005","customerName":"Junior","customerAge":18,"previousClaimCount":0,"expiryDate":"2026-12-31","loadCapacityTons":5.0}
 '@
 Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/policies/truck" -ContentType "application/json" -Body $body
 
@@ -109,7 +109,7 @@ TRUCK-3010
 }
 
 20) Alternate curl.exe form
-curl.exe -i -X POST "http://localhost:8080/api/policies/car" -H "Content-Type: application/json" -d '{"policyNum":"CAR-1009","customerName":"Amit","customerAge":32,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH12AB1234"}'
+curl.exe -i -X POST "http://localhost:8080/api/policies/car" -H "Content-Type: application/json" -d '{"policyNum":"CAR-1009","customerId":"CUST-001","customerName":"Amit","customerAge":32,"previousClaimCount":0,"expiryDate":"2026-12-31","registrationNumber":"MH12AB1234"}'
 
 Why your last request failed:
 - The 409 Conflict means the API is working correctly.

@@ -12,6 +12,7 @@ import com.wipfli.training.service.PolicyFactory;
 import com.wipfli.training.service.PolicyRegister;
 import com.wipfli.training.service.PremiumCalculable;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
@@ -49,7 +51,7 @@ public class PolicyController {
 
         PolicyDetail policy = PolicyFactory.createCarPolicy(
                 request.getPolicyNum(),
-                new Customer(request.getCustomerName(), request.getCustomerAge()),
+                new Customer(request.getCustomerId(), request.getCustomerName(), request.getCustomerAge()),
                 request.getPreviousClaimCount(),
                 request.getExpiryDate(),
                 request.getRegistrationNumber()
@@ -66,7 +68,7 @@ public class PolicyController {
 
         PolicyDetail policy = PolicyFactory.createBikePolicy(
                 request.getPolicyNum(),
-                new Customer(request.getCustomerName(), request.getCustomerAge()),
+                new Customer(request.getCustomerId(), request.getCustomerName(), request.getCustomerAge()),
                 request.getPreviousClaimCount(),
                 request.getExpiryDate(),
                 request.getEngineCC()
@@ -83,7 +85,7 @@ public class PolicyController {
 
         PolicyDetail policy = PolicyFactory.createTruckPolicy(
                 request.getPolicyNum(),
-                new Customer(request.getCustomerName(), request.getCustomerAge()),
+                new Customer(request.getCustomerId(), request.getCustomerName(), request.getCustomerAge()),
                 request.getPreviousClaimCount(),
                 request.getExpiryDate(),
                 request.getLoadCapacityTons()
@@ -109,14 +111,12 @@ public class PolicyController {
                 .collect(Collectors.toList());
     }
 
-    @PostMapping("/{policyNumber}/claim")
+    @PostMapping("/{policyNumber}/claims")
     public PolicyResponseDTO recordClaim(
             @PathVariable String policyNumber)
             throws PolicyNotFoundException {
 
-        PolicyDetail policy = policyRegister.findByNumber(policyNumber);
-        policy.recordClaim();
-        return toResponse(policy);
+        return toResponse(policyRegister.recordClaim(policyNumber));
     }
 
     @PostMapping("/{policyNumber}/expire")
@@ -124,19 +124,16 @@ public class PolicyController {
             @PathVariable String policyNumber)
             throws PolicyNotFoundException {
 
-        PolicyDetail policy = policyRegister.findByNumber(policyNumber);
-        policy.expire();
-        return toResponse(policy);
+        return toResponse(policyRegister.expire(policyNumber));
     }
 
     @PostMapping("/{policyNumber}/renew")
     public PolicyResponseDTO renewPolicy(
-            @PathVariable String policyNumber)
+            @PathVariable String policyNumber,
+            @RequestParam("on") @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate on)
             throws PolicyNotFoundException {
 
-        PolicyDetail policy = policyRegister.findByNumber(policyNumber);
-        policy.renew(LocalDate.now());
-        return toResponse(policy);
+        return toResponse(policyRegister.renew(policyNumber, on));
     }
 
     @GetMapping("/{policyNumber}/premium")
