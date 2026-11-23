@@ -386,6 +386,8 @@ public class PremiumCalculatorApp {
         }
     }
 
+            // ---------- Expiry Date ----------
+            LocalDate expiryDate;
 
     private void printMenu() {
 
