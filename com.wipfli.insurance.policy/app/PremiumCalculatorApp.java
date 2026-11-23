@@ -3,41 +3,134 @@ package app;
 import model.Customer;
 import model.PolicyDetail;
 import model.VehicleType;
-import model.CarPolicy;
-import model.BikePolicy;
-import model.TruckPolicy;
-import service.NoClaimBonusCalculator;
 import service.PolicyValidator;
-import service.PolicyRegister;                       // >>> CHANGE 1: import register
+import service.PolicyRegister;
+import service.PolicyFactory;
 import service.PremiumCalculable;
 import service.StandardPremiumCalculator;
+import service.NoClaimBonusCalculator;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Optional;
 import exception.InvalidPolicyDataException;
 import exception.PolicyBusinessException;
-import exception.PolicyNotFoundException;            // >>> CHANGE 1: import checked exception
+import exception.PolicyNotFoundException;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class PremiumCalculatorApp {
 
     private static final int MINIMUM_TRUCK_DRIVER_AGE = 21;
+    private static final LocalDate REFERENCE_DATE = LocalDate.of(2026, 8, 9);
+
+    private final Scanner scanner = new Scanner(System.in);
+    private final PolicyValidator validator = new PolicyValidator();
+    private final PolicyRegister register;
+    private final PremiumCalculable standardCalculator;
+    private final PremiumCalculable noClaimCalculator;
+
+    public PremiumCalculatorApp() {
+        this.standardCalculator = new StandardPremiumCalculator();
+        this.noClaimCalculator = new NoClaimBonusCalculator(standardCalculator);
+        this.register = new PolicyRegister(noClaimCalculator);
+    }
 
     public static void main(String[] args) {
+        new PremiumCalculatorApp().run();
+    }
 
-        Scanner scanner = new Scanner(System.in);
+    public void run() {
 
-        PolicyValidator validator = new PolicyValidator();
+        printBanner();
+        seedData();
 
-        // >>> CHANGE 2: create the register (Collections-backed store)
-        PolicyRegister register = new PolicyRegister();
+        while (true) {
 
-        PremiumCalculable standardCalculator =
-                new StandardPremiumCalculator();
+            printMenu();
 
-        PremiumCalculable noClaimCalculator =
-                new NoClaimBonusCalculator();
+            int choice = readInt("Enter Choice : ");
+
+            switch (choice) {
+
+                case 1:
+                    handleAddPolicy();
+                    break;
+
+                case 2:
+                    handleRecordClaim();
+                    break;
+
+                case 3:
+                    handleExpirePolicy();
+                    break;
+
+                case 4:
+                    handleRenewPolicy();
+                    break;
+
+                case 5:
+                    handleShowPolicy();
+                    break;
+
+                case 6:
+                    handleShowPremium();
+                    break;
+
+                case 7:
+                    handleViewByCustomer();
+                    break;
+
+                case 8:
+                    handleViewByVehicleType();
+                    break;
+
+                case 9:
+                    handleViewExpiringSoon();
+                    break;
+
+                case 10:
+                    handleViewSummary();
+                    break;
+
+                case 11:
+                    handleFindSimilarPolicyHolders();
+                    break;
+
+                case 12:
+                    handleTotalPremiumForVehicleType();
+                    break;
+
+                case 13:
+                    handleCountPoliciesByVehicleType();
+                    break;
+
+                case 14:
+                    handlePoliciesExpiringWithin();
+                    break;
+
+                case 15:
+                    handleCustomerWithMostPolicies();
+                    break;
+
+                case 16:
+                    handleTop5ByPremium();
+                    break;
+
+                case 17:
+                    System.out.println("Application Closed");
+                    scanner.close();
+                    return;
+
+                default:
+                    System.out.println("Invalid Choice");
+            }
+        }
+    }
+
+    private void printBanner() {
 
         System.out.println("================================================");
         System.out.println("      INSURANCE PREMIUM CALCULATOR");
@@ -52,415 +145,631 @@ public class PremiumCalculatorApp {
         System.out.println("\nPREMIUM RULES");
         System.out.println("--------------------------------");
         System.out.println("Age <= 25  : +20% Loading");
-        System.out.println("Age > 25   : +10% Loading");
-        System.out.println("Each Claim : +Rs. 300");
+        System.out.println("Age > 25   : +0% Loading");
+        System.out.println("Each Claim : +Rs. 150");
         System.out.println("No Claim Bonus : 10% Discount");
+    }
 
+    private void handleAddPolicy() {
 
-        int count;
+        System.out.println("\n========== ADD POLICY ==========");
+
+        String policyNum = readPolicyNumber();
+        String customerName = readLine("Customer Name : ");
+        VehicleType vehicleType = readVehicleType(policyNum);
+        int customerAge = readCustomerAge(policyNum, vehicleType);
+        Customer customer = new Customer(customerName, customerAge);
+        int previousClaims = readPreviousClaims();
+        LocalDate expiryDate = readExpiryDate(policyNum);
+
+        try {
+
+            PolicyDetail newPolicy = buildPolicy(
+                    policyNum,
+                    customer,
+                    vehicleType,
+                    previousClaims,
+                    expiryDate
+            );
+
+            register.add(newPolicy);
+            System.out.println("Policy Added Successfully");
+
+        } catch (PolicyBusinessException e) {
+
+            printRefusal(e);
+
+            if (e.getCause() != null) {
+                System.out.println("   caused by -> " + e.getCause());
+            }
+        }
+    }
+
+    private String readPolicyNumber() {
 
         while (true) {
 
             try {
 
-                System.out.print("\nEnter Number Of Policies: ");
-
-                count = scanner.nextInt();
-                scanner.nextLine();
-
-                validator.validatePolicyCount(count);
-
-                break;
+                String policyNum = readLine("Policy Number : ");
+                validator.validatePolicyNumber(policyNum);
+                return policyNum;
 
             } catch (InvalidPolicyDataException e) {
+                printRefusal(e);
+            }
+        }
+    }
 
+    private VehicleType readVehicleType(String policyNum) {
+
+        while (true) {
+
+            try {
+
+                String input = readLine("Vehicle Type (BIKE/CAR/TRUCK): ");
+                return VehicleType.valueOf(input.trim().toUpperCase());
+
+            } catch (IllegalArgumentException e) {
                 System.out.println(
-                        "REFUSED [" + e.getClass().getSimpleName() + "] "
-                                + e.getMessage()
+                        "REFUSED [InvalidPolicyDataException] "
+                                + policyNum
+                                + ": vehicle type must be BIKE, CAR or TRUCK"
                 );
             }
         }
+    }
 
-        // >>> CHANGE 3: no more PolicyDetail[] array — the register IS the store
+    private int readCustomerAge(String policyNum, VehicleType vehicleType) {
 
-        for (int i = 0; i < count; i++) {
+        while (true) {
 
-            System.out.println(
-                    "\n========== POLICY " + (i + 1) + " =========="
-            );
+            try {
 
-            // ---------- Policy Number ----------
-            String policyNum;
+                int customerAge = readInt("Customer Age : ");
+                validator.validateAge(customerAge);
 
-            while (true) {
+                if (vehicleType == VehicleType.TRUCK
+                        && customerAge < MINIMUM_TRUCK_DRIVER_AGE) {
 
-                try {
-
-                    System.out.print("Policy Number : ");
-
-                    policyNum = scanner.nextLine();
-
-                    validator.validatePolicyNumber(policyNum);
-
-                    break;
-
-                } catch (InvalidPolicyDataException e) {
-
-                    System.out.println(
-                            "REFUSED [" + e.getClass().getSimpleName() + "] "
-                                    + e.getMessage()
+                    throw new InvalidPolicyDataException(
+                            policyNum,
+                            "a truck policy needs a driver of at least "
+                                    + MINIMUM_TRUCK_DRIVER_AGE
+                                    + ", this driver is " + customerAge
                     );
                 }
+
+                return customerAge;
+
+            } catch (InvalidPolicyDataException e) {
+                printRefusal(e);
             }
+        }
+    }
 
-            // ---------- Customer Name ----------
-            System.out.print("Customer Name : ");
+    private int readPreviousClaims() {
 
-            String customerName = scanner.nextLine();
+        while (true) {
 
-            // ---------- Vehicle Type (before age for truck rule) ----------
-            VehicleType vehicleType;
+            try {
 
-            while (true) {
+                int previousClaims = readInt("Previous Claim Count : ");
+                validator.validateClaimCount(previousClaims);
+                return previousClaims;
 
-                try {
-
-                    System.out.print("Vehicle Type (BIKE/CAR/TRUCK): ");
-
-                    vehicleType = VehicleType.valueOf(
-                            scanner.nextLine().trim().toUpperCase()
-                    );
-
-                    break;
-
-                } catch (IllegalArgumentException e) {
-                    System.out.println(
-                            "REFUSED [InvalidPolicyDataException] "
-                                    + policyNum
-                                    + ": vehicle type must be BIKE, CAR or TRUCK"
-                    );
-                }
+            } catch (InvalidPolicyDataException e) {
+                printRefusal(e);
             }
+        }
+    }
 
-            // ---------- Customer Age (truck rule thrown as custom exception) ----------
-            int customerAge;
+    private LocalDate readExpiryDate(String policyNum) {
 
-            while (true) {
+        while (true) {
 
-                try {
+            try {
 
-                    System.out.print("Customer Age : ");
+                String input = readLine("Expiry Date (yyyy-MM-dd): ");
+                LocalDate expiryDate = LocalDate.parse(input.trim());
 
-                    customerAge = scanner.nextInt();
-                    scanner.nextLine();
+                if (expiryDate.isBefore(LocalDate.now())) {
 
-                    validator.validateAge(customerAge);
-
-                    if (vehicleType == VehicleType.TRUCK
-                            && customerAge < MINIMUM_TRUCK_DRIVER_AGE) {
-
-                        throw new InvalidPolicyDataException(
-                                policyNum,
-                                "a truck policy needs a driver of at least "
-                                        + MINIMUM_TRUCK_DRIVER_AGE
-                                        + ", this driver is " + customerAge
-                        );
-                    }
-
-                    break;
-
-                } catch (InvalidPolicyDataException e) {
-
-                    System.out.println(
-                            "REFUSED [" + e.getClass().getSimpleName() + "] "
-                                    + e.getPolicyNumber() + ": " + e.getMessage()
+                    throw new InvalidPolicyDataException(
+                            policyNum,
+                            "expiry date cannot be in the past, got " + expiryDate
                     );
                 }
+
+                return expiryDate;
+
+            } catch (DateTimeParseException e) {
+
+                System.out.println(
+                        "REFUSED [InvalidPolicyDataException] "
+                                + policyNum
+                                + ": date must be in yyyy-MM-dd format"
+                );
+
+            } catch (InvalidPolicyDataException e) {
+                printRefusal(e);
             }
+        }
+    }
 
-            Customer customer =
-                    new Customer(customerName, customerAge);
+    private PolicyDetail buildPolicy(String policyNum,
+                                     Customer customer,
+                                     VehicleType vehicleType,
+                                     int previousClaims,
+                                     LocalDate expiryDate) {
 
-            // ---------- Previous Claims ----------
-            int previousClaims;
+        switch (vehicleType) {
 
-            while (true) {
+            case CAR:
 
-                try {
+                String registrationNumber = readLine("Registration Number : ");
+                return PolicyFactory.createCarPolicy(
+                        policyNum,
+                        customer,
+                        previousClaims,
+                        expiryDate,
+                        registrationNumber
+                );
 
-                    System.out.print("Previous Claim Count : ");
+            case BIKE:
 
-                    previousClaims = scanner.nextInt();
-                    scanner.nextLine();
+                int engineCC = readEngineCC(policyNum);
+                return PolicyFactory.createBikePolicy(
+                        policyNum,
+                        customer,
+                        previousClaims,
+                        expiryDate,
+                        engineCC
+                );
 
-                    validator.validateClaimCount(previousClaims);
+            case TRUCK:
 
-                    break;
+                double loadCapacity = readLoadCapacity(policyNum);
+                return PolicyFactory.createTruckPolicy(
+                        policyNum,
+                        customer,
+                        previousClaims,
+                        expiryDate,
+                        loadCapacity
+                );
 
-                } catch (InvalidPolicyDataException e) {
+            default:
+                throw new InvalidPolicyDataException(
+                        policyNum,
+                        "unsupported vehicle type: " + vehicleType
+                );
+        }
+    }
 
-                    System.out.println(
-                            "REFUSED [" + e.getClass().getSimpleName() + "] "
-                                    + e.getMessage()
-                    );
-                }
+    private int readEngineCC(String policyNum) {
+
+        while (true) {
+
+            try {
+
+                String engineText = readLine("Engine CC : ");
+                return Integer.parseInt(engineText.trim());
+
+            } catch (NumberFormatException nfe) {
+
+                System.out.println(
+                        "REFUSED [InvalidPolicyDataException] "
+                                + policyNum
+                                + ": engine CC must be a number"
+                );
             }
+        }
+    }
+
+    private double readLoadCapacity(String policyNum) {
+
+        while (true) {
+
+            try {
+
+                String loadText = readLine("Load Capacity (Tons) : ");
+                return Double.parseDouble(loadText.trim());
+
+            } catch (NumberFormatException nfe) {
+
+                System.out.println(
+                        "REFUSED [InvalidPolicyDataException] "
+                                + policyNum
+                                + ": load capacity must be a number"
+                );
+            }
+        }
+    }
 
             // ---------- Expiry Date ----------
             LocalDate expiryDate;
 
-            while (true) {
+    private void printMenu() {
 
-                try {
+        System.out.println("\n========== POLICY MENU ==========");
+        System.out.println("1. Add Policy");
+        System.out.println("2. Record Claim");
+        System.out.println("3. Expire Policy");
+        System.out.println("4. Renew Policy");
+        System.out.println("5. Show Policy");
+        System.out.println("6. Show Premium");
+        System.out.println("7. View Policies By Customer");
+        System.out.println("8. View Policies By Vehicle Type");
+        System.out.println("9. View Policies Expiring Soon");
+        System.out.println("10. View Premium Summary By Vehicle Type");
+        System.out.println("11. Find Similar Policy Holders");
+        System.out.println("12. Total Premium For Vehicle Type");
+        System.out.println("13. Count Policies By Vehicle Type");
+        System.out.println("14. Policies Expiring Within N Days");
+        System.out.println("15. Customer With Most Policies");
+        System.out.println("16. Top 5 Policies By Premium");
+        System.out.println("17. Exit");
+    }
 
-                    System.out.print("Expiry Date (yyyy-MM-dd): ");
+    private void handleRecordClaim() {
 
-                    expiryDate = LocalDate.parse(
-                            scanner.nextLine().trim()
-                    );
+        try {
 
-                    if (expiryDate.isBefore(LocalDate.now())) {
+            PolicyDetail selectedPolicy = readSelectedPolicy();
+            selectedPolicy.recordClaim();
 
-                        throw new InvalidPolicyDataException(
-                                policyNum,
-                                "expiry date cannot be in the past, got " + expiryDate
-                        );
-                    }
+            System.out.println("Claim Added Successfully");
+            System.out.println("Claims : " + selectedPolicy.getPreviousClaimCount());
 
-                    break;
+        } catch (PolicyNotFoundException | PolicyBusinessException e) {
+            printRefusal(e);
+        }
+    }
 
-                } catch (DateTimeParseException e) {
+    private void handleExpirePolicy() {
 
-                    System.out.println(
-                            "REFUSED [InvalidPolicyDataException] "
-                                    + policyNum
-                                    + ": date must be in yyyy-MM-dd format"
-                    );
+        try {
 
-                } catch (InvalidPolicyDataException e) {
+            PolicyDetail selectedPolicy = readSelectedPolicy();
+            selectedPolicy.expire();
 
-                    System.out.println(
-                            "REFUSED [" + e.getClass().getSimpleName() + "] "
-                                    + e.getPolicyNumber() + ": " + e.getMessage()
-                    );
-                }
-            }
+            System.out.println("Policy Expired");
+            System.out.println("Status : " + selectedPolicy.getStatus());
 
-            // ---------- Build subclass + REGISTER it ----------
-            try {
+        } catch (PolicyNotFoundException | PolicyBusinessException e) {
+            printRefusal(e);
+        }
+    }
 
-                PolicyDetail newPolicy = null;
+    private void handleRenewPolicy() {
 
-                switch (vehicleType) {
+        try {
 
-                    case CAR:
+            PolicyDetail selectedPolicy = readSelectedPolicy();
+            LocalDate today = readTodayDate();
 
-                        System.out.print("Registration Number : ");
-                        String registrationNumber = scanner.nextLine();
+            selectedPolicy.renew(today);
 
-                        newPolicy = new CarPolicy(
-                                policyNum,
-                                customer,
-                                previousClaims,
-                                expiryDate,
-                                registrationNumber
-                        );
+            System.out.println("Policy Renewed");
+            System.out.println("Status : " + selectedPolicy.getStatus());
 
-                        break;
+        } catch (PolicyNotFoundException | PolicyBusinessException e) {
+            printRefusal(e);
+        }
+    }
 
-                    case BIKE:
+    private void handleShowPolicy() {
 
-                        System.out.print("Engine CC : ");
-                        String engineText = scanner.nextLine().trim();
+        try {
 
-                        int engineCC;
-                        try {
-                            engineCC = Integer.parseInt(engineText);
-                        } catch (NumberFormatException nfe) {
-                            throw new InvalidPolicyDataException(
-                                    policyNum,
-                                    "engine CC must be a number, got '" + engineText + "'",
-                                    nfe
-                            );
-                        }
+            PolicyDetail selectedPolicy = readSelectedPolicy();
+            System.out.println(selectedPolicy.getPolicyDetails());
 
-                        newPolicy = new BikePolicy(
-                                policyNum,
-                                customer,
-                                previousClaims,
-                                expiryDate,
-                                engineCC
-                        );
+        } catch (PolicyNotFoundException | PolicyBusinessException e) {
+            printRefusal(e);
+        }
+    }
 
-                        break;
+    private void handleShowPremium() {
 
-                    case TRUCK:
+        try {
 
-                        System.out.print("Load Capacity (Tons) : ");
-                        String loadText = scanner.nextLine().trim();
+            PolicyDetail selectedPolicy = readSelectedPolicy();
+            System.out.println("Premium: " + noClaimCalculator.calculatePremium(selectedPolicy));
 
-                        double loadCapacity;
-                        try {
-                            loadCapacity = Double.parseDouble(loadText);
-                        } catch (NumberFormatException nfe) {
-                            throw new InvalidPolicyDataException(
-                                    policyNum,
-                                    "load capacity must be a number, got '" + loadText + "'",
-                                    nfe
-                            );
-                        }
+        } catch (PolicyNotFoundException | PolicyBusinessException e) {
+            printRefusal(e);
+        }
+    }
 
-                        newPolicy = new TruckPolicy(
-                                policyNum,
-                                customer,
-                                previousClaims,
-                                expiryDate,
-                                loadCapacity
-                        );
+    private void handleViewByCustomer() {
 
-                        break;
-                }
+        String customerName = readLine("Enter Customer Name : ");
+        List<PolicyDetail> policies = register.findByCustomer(customerName);
 
-
-                // If 101 already exists, this throws DuplicatePolicyNumberException.
-                register.add(newPolicy);
-
-            } catch (PolicyBusinessException e) {
-
-                System.out.println(
-                        "REFUSED [" + e.getClass().getSimpleName() + "] "
-                                + e.getPolicyNumber() + ": " + e.getMessage()
-                );
-
-                if (e.getCause() != null) {
-                    System.out.println("   caused by -> " + e.getCause());
-                }
-
-                i--;
-            }
+        if (policies.isEmpty()) {
+            System.out.println("No policies found for customer: " + customerName);
+            return;
         }
 
-        // ================= PREMIUM SUMMARY =================
-        System.out.println("\n========== PREMIUM SUMMARY ==========");
+        System.out.println("\nPolicies for " + customerName + ":");
 
-        // >>> CHANGE 6: loop over the register, not an array
-        for (PolicyDetail policy : register.getAllPolicies()) {
+        for (PolicyDetail policy : policies) {
+            System.out.println(policy.getPolicyDetails());
+        }
+    }
 
-            double standardPremium =
-                    standardCalculator.calculatePremium(policy);
+    private void handleViewByVehicleType() {
 
-            double noClaimPremium =
-                    noClaimCalculator.calculatePremium(policy);
+        VehicleType vehicleType = readVehicleTypeForLookup();
+        List<PolicyDetail> policies = register.findByVehicleType(vehicleType);
 
-            System.out.println("\n" + policy.getPolicyDetails());
-            System.out.println("Standard Premium : Rs." + standardPremium);
-            System.out.println("Final Premium    : Rs." + noClaimPremium);
+        if (policies.isEmpty()) {
+            System.out.println("No policies found for vehicle type: " + vehicleType);
+            return;
         }
 
-        // ================= POLICY MENU =================
+        System.out.println("\n" + vehicleType + " Book:");
+
+        for (PolicyDetail policy : policies) {
+            System.out.println(policy.getPolicyDetails());
+        }
+    }
+
+    private void handleViewExpiringSoon() {
+
+        int days = readInt("Enter number of days : ");
+        LocalDate today = readTodayDate();
+
+        List<PolicyDetail> expiringSoon = register.findExpiringWithin(days, today);
+
+        if (expiringSoon.isEmpty()) {
+            System.out.println("No policies expiring in the next " + days + " days.");
+            return;
+        }
+
+        System.out.println("\nPolicies expiring within " + days + " days:");
+
+        for (PolicyDetail policy : expiringSoon) {
+            System.out.println(policy.getPolicyDetails());
+        }
+    }
+
+    private void handleViewSummary() {
+
+        Map<VehicleType, Double> summary = register.totalPremiumByVehicleType();
+
+        System.out.println("\n========== PREMIUM SUMMARY BY VEHICLE TYPE ==========");
+
+        for (Map.Entry<VehicleType, Double> entry : summary.entrySet()) {
+            System.out.println(entry.getKey() + " : Rs." + entry.getValue());
+        }
+    }
+
+    private PolicyDetail readSelectedPolicy() throws PolicyNotFoundException {
+
+        String number = readLine("Enter Policy Number : ");
+        return register.findByPolicyNumber(number)
+                .orElseThrow(() -> new PolicyNotFoundException(number, "no policy with this number"));
+    }
+
+    private VehicleType readVehicleTypeForLookup() {
+
         while (true) {
 
-            System.out.println("\n========== POLICY MENU ==========");
-            System.out.println("1. Record Claim");
-            System.out.println("2. Expire Policy");
-            System.out.println("3. Renew Policy");
-            System.out.println("4. Show Policy");
-            System.out.println("5. Exit");
-
-            System.out.print("Enter Choice : ");
-
-            int choice = scanner.nextInt();
-            scanner.nextLine();
-
-            if (choice == 5) {
-                System.out.println("Application Closed");
-                break;
-            }
-
-            System.out.print("Enter Policy Number : ");
-            String number = scanner.nextLine();
-
-            // >>> CHANGE 7: use register.findByNumber() — never returns null,
-            // throws PolicyNotFoundException (checked) for a missing number
-            PolicyDetail selectedPolicy;
-
-            try {
-                selectedPolicy = register.findByNumber(number);
-            } catch (PolicyNotFoundException e) {
-                System.out.println(
-                        "REFUSED [" + e.getClass().getSimpleName() + "] "
-                                + e.getPolicyNumber() + ": " + e.getMessage()
-                );
-                continue;
-            }
-
-            // ONE catch point for all business-rule failures in the menu
             try {
 
-                switch (choice) {
+                String input = readLine("Enter Vehicle Type (BIKE/CAR/TRUCK): ");
+                return VehicleType.valueOf(input.trim().toUpperCase());
 
-                    case 1:
-
-                        selectedPolicy.recordClaim();
-
-                        System.out.println("Claim Added Successfully");
-                        System.out.println(
-                                "Claims : " + selectedPolicy.getPreviousClaimCount());
-
-                        break;
-
-                    case 2:
-
-                        selectedPolicy.expire();
-
-                        System.out.println("Policy Expired");
-                        System.out.println(
-                                "Status : " + selectedPolicy.getStatus());
-
-                        break;
-
-                    case 3:
-
-                        LocalDate today;
-
-                        try {
-                            System.out.print("Enter Today's Date (yyyy-MM-dd): ");
-                            today = LocalDate.parse(scanner.nextLine().trim());
-                        } catch (DateTimeParseException e) {
-                            System.out.println(
-                                    "Invalid date format. Using system date instead.");
-                            today = LocalDate.now();
-                        }
-
-                        selectedPolicy.renew(today);
-
-                        System.out.println("Policy Renewed");
-                        System.out.println(
-                                "Status : " + selectedPolicy.getStatus());
-
-                        break;
-
-                    case 4:
-
-                        System.out.println(selectedPolicy.getPolicyDetails());
-
-                        break;
-
-                    default:
-
-                        System.out.println("Invalid Choice");
-                }
-
-            } catch (PolicyBusinessException e) {
-                System.out.println(
-                        "REFUSED [" + e.getClass().getSimpleName() + "] "
-                                + e.getPolicyNumber() + ": " + e.getMessage()
-                );
+            } catch (IllegalArgumentException e) {
+                System.out.println("Invalid vehicle type. Must be BIKE, CAR or TRUCK.");
             }
         }
+    }
 
-        System.out.println("\nProgram finished normally.");
+    private LocalDate readTodayDate() {
 
-        scanner.close();
+        try {
+
+            String input = readLine("Enter Today's Date (yyyy-MM-dd): ");
+            return LocalDate.parse(input.trim());
+
+        } catch (DateTimeParseException e) {
+
+            System.out.println("Invalid date format. Using system date instead.");
+            return LocalDate.now();
+        }
+    }
+
+    private String readLine(String prompt) {
+
+        System.out.print(prompt);
+        return scanner.nextLine();
+    }
+
+    private int readInt(String prompt) {
+
+        while (true) {
+
+            try {
+
+                System.out.print(prompt);
+                int value = scanner.nextInt();
+                scanner.nextLine();
+                return value;
+
+            } catch (Exception e) {
+
+                System.out.println("Invalid input. Please enter a whole number.");
+                scanner.nextLine();
+            }
+        }
+    }
+
+    private void printRefusal(Exception e) {
+
+        String policyNumber = "unknown";
+
+        if (e instanceof PolicyBusinessException) {
+            policyNumber = ((PolicyBusinessException) e).getPolicyNumber();
+        } else if (e instanceof PolicyNotFoundException) {
+            policyNumber = ((PolicyNotFoundException) e).getPolicyNumber();
+        }
+
+        System.out.println(
+                "REFUSED [" + e.getClass().getSimpleName() + "] "
+                        + policyNumber + ": " + e.getMessage()
+        );
+    }
+
+    private void seedData() {
+
+        register.add(PolicyFactory.createCarPolicy(
+                "POL-2001",
+                new Customer("Ravi Kumar", 22),
+                1,
+                LocalDate.of(2026, 8, 15),
+                "KA-05-1234"
+        ));
+
+        register.add(PolicyFactory.createTruckPolicy(
+                "POL-2002",
+                new Customer("Ravi Kumar", 22),
+                0,
+                LocalDate.of(2026, 9, 1),
+                12.5
+        ));
+
+        register.add(PolicyFactory.createBikePolicy(
+                "POL-2003",
+                new Customer("Meena Iyer", 34),
+                2,
+                LocalDate.of(2026, 8, 20),
+                150
+        ));
+
+        register.add(PolicyFactory.createCarPolicy(
+                "POL-2004",
+                new Customer("Ajay Verma", 41),
+                0,
+                LocalDate.of(2027, 1, 10),
+                "MH-12-5678"
+        ));
+
+        register.add(PolicyFactory.createBikePolicy(
+                "POL-2005",
+                new Customer("Sneha Rao", 29),
+                0,
+                LocalDate.of(2026, 8, 25),
+                125
+        ));
+
+        register.add(PolicyFactory.createCarPolicy(
+                "POL-2006",
+                new Customer("Ravi Kumar", 22),
+                3,
+                LocalDate.of(2026, 12, 1),
+                "TN-09-9012"
+        ));
+
+        System.out.println("\nSeed data loaded: " + register.size() + " policies");
+    }
+
+
+    private void handleFindSimilarPolicyHolders() {
+
+        try {
+
+            PolicyDetail selectedPolicy = readSelectedPolicy();
+            String customerName = selectedPolicy.getCustomer().getCustomerName();
+
+            List<PolicyDetail> similarPolicies = register.findSimilarPolicyHolders(
+                    selectedPolicy.getPolicyNum()
+            );
+
+            if (similarPolicies.isEmpty()) {
+                System.out.println(
+                        "No other customers share the same vehicle-type pattern as "
+                                + customerName
+                );
+                return;
+            }
+
+            System.out.println(
+                    "\nOther customers with the same vehicle-type pattern as "
+                            + customerName + ":"
+            );
+
+            for (PolicyDetail policy : similarPolicies) {
+                System.out.println(policy.getPolicyDetails());
+            }
+
+        } catch (PolicyNotFoundException | PolicyBusinessException e) {
+            printRefusal(e);
+        }
+    }
+
+    private void handleTotalPremiumForVehicleType() {
+
+        VehicleType vehicleType = readVehicleTypeForLookup();
+        double total = register.totalPremiumForVehicleType(vehicleType);
+        System.out.println(vehicleType + ": " + total);
+    }
+
+    private void handleCountPoliciesByVehicleType() {
+
+        Map<VehicleType, Long> counts = register.countPoliciesByVehicleType();
+
+        System.out.println("\n========== POLICY COUNT BY VEHICLE TYPE ==========");
+        counts.forEach((vehicleType, count) ->
+                System.out.println(vehicleType + " : " + count)
+        );
+    }
+
+    private void handlePoliciesExpiringWithin() {
+
+        int days = readInt("Enter number of days : ");
+        List<PolicyDetail> expiringSoon = register.policiesExpiringWithin(days, REFERENCE_DATE);
+
+        if (expiringSoon.isEmpty()) {
+            System.out.println("No policies expiring in the next " + days + " days.");
+            return;
+        }
+
+        System.out.println("\nPolicies expiring within " + days + " days of " + REFERENCE_DATE + ":");
+        expiringSoon.forEach(policy ->
+                System.out.println(policy.getPolicyNum()
+                        + " | " + policy.getCustomer().getCustomerName()
+                        + " | " + policy.getVehicleType()
+                        + " | expires " + policy.getExpiryDate())
+        );
+    }
+
+    private void handleCustomerWithMostPolicies() {
+
+        Optional<String> customer = register.customerWithMostPolicies();
+
+        customer.ifPresentOrElse(
+                name -> {
+                    long count = register.findByCustomerName(name).size();
+                    System.out.println(name + " (" + count + " policies)");
+                },
+                () -> System.out.println("No customers found.")
+        );
+    }
+
+    private void handleTop5ByPremium() {
+
+        List<PolicyDetail> top5 = register.top5ByPremium();
+
+        System.out.println("\n========== TOP 5 PREMIUMS ==========");
+        top5.forEach(policy ->
+                System.out.println(policy.getPolicyNum()
+                        + " | " + policy.getCustomer().getCustomerName()
+                        + " | " + policy.getVehicleType()
+                        + " | Claims: " + policy.getPreviousClaimCount()
+                        + " -> " + noClaimCalculator.calculatePremium(policy))
+        );
     }
 }

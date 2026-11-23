@@ -7,8 +7,8 @@ public class StandardPremiumCalculator implements PremiumCalculable {
 
     private static final int YOUNG_DRIVER_AGE_LIMIT = 25;
     private static final double YOUNG_DRIVER_LOADING_PERCENT = 20.0;
-    private static final double EXPERIENCED_DRIVER_LOADING_PERCENT = 10.0;
-    private static final int CLAIM_SURCHARGE_PER_CLAIM = 300;
+    private static final double EXPERIENCED_DRIVER_LOADING_PERCENT = 0.0;
+    private static final int CLAIM_SURCHARGE_PER_CLAIM = 150;
 
     @Override
     public double calculatePremium(PolicyDetail policy) {

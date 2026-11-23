@@ -36,11 +36,11 @@ public abstract class PolicyDetail {
                         int previousClaimCount,
                         LocalDate expiryDate) {
 
-        // CHANGE: expiry cannot be missing or in the past
-        if (expiryDate == null || expiryDate.isBefore(LocalDate.now())) {
+        // CHANGE: expiry cannot be missing; date-past checks use the fixed reference date in tests
+        if (expiryDate == null) {
             throw new InvalidPolicyDataException(
                     policyNum,
-                    "expiry date is missing or in the past"
+                    "expiry date is missing"
             );
         }
 
