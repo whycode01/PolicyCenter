@@ -15,7 +15,7 @@ public interface PolicyRepository extends JpaRepository<PolicyDetail, String> {
 
     List<PolicyDetail> findByCustomerCustomerName(String customerName);
 
-    // DERIVED FROM THE NAME: WHERE vehicle_type = ?
+
     List<PolicyDetail> findByVehicleType(VehicleType vehicleType);
 
 
@@ -28,7 +28,7 @@ public interface PolicyRepository extends JpaRepository<PolicyDetail, String> {
     List<PolicyDetail> findExpiringBetween(@Param("from") LocalDate from,
                                            @Param("to") LocalDate to);
 
-    // WRITTEN BY HAND: a GROUP BY count can't be expressed as a method name.
+
     @Query("SELECT p.vehicleType, COUNT(p) FROM PolicyDetail p GROUP BY p.vehicleType")
     List<Object[]> countGroupedByVehicleType();
 }

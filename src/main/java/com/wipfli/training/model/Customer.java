@@ -19,7 +19,6 @@ public class Customer {
     @Column(name = "customer_age", nullable = false)
     private int customerAge;
 
-    // Required by Hibernate - it instantiates the entity, then fills the fields
     protected Customer() {
     }
 

@@ -22,12 +22,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional(readOnly = true)   // every method runs in a read-only transaction by default
+@Transactional(readOnly = true)
 public class PolicyRegister {
 
-    // Fixed reference date for the expiry query. It used to be handled near the
-    // in-memory repository; an interface can't hold this logic, so it lives here
-    // in the service. Check the class diagram for the exact place.
     public static final LocalDate REFERENCE_DATE = LocalDate.of(2026, 8, 9);
 
     private final PremiumCalculatorResolver premiumCalculatorResolver;
@@ -39,14 +36,7 @@ public class PolicyRegister {
         this.policyRepository = policyRepository;
     }
 
-    // ---------------------------------------------------------
-    // BASIC POLICY OPERATIONS
-    // ---------------------------------------------------------
 
-    // The existsById check is REQUIRED. With an @Id that you assign yourself,
-    // save() calls merge(), and merge() UPDATES an existing row instead of failing.
-    // Without this check, a duplicate would silently overwrite the first policy
-    // and the API would return 201 instead of 409.
     @Transactional
     public void add(PolicyDetail policy) {
         String number = policy.getPolicyNum();
@@ -65,10 +55,7 @@ public class PolicyRegister {
                         number, "no policy with this number"));
     }
 
-    // ---------------------------------------------------------
-    // LIFECYCLE OPERATIONS (write transactions)
-    // No business rules here - they all live inside PolicyDetail.
-    // ---------------------------------------------------------
+
 
     @Transactional
     public PolicyDetail expire(String number) throws PolicyNotFoundException {
@@ -95,9 +82,7 @@ public class PolicyRegister {
         return policyRepository.findById(number);
     }
 
-    // ---------------------------------------------------------
-    // CUSTOMER QUERIES (now run in the database)
-    // ---------------------------------------------------------
+
 
     public List<PolicyDetail> findByCustomer(String customerName) {
         return policyRepository.findByCustomerCustomerName(customerName);
@@ -107,16 +92,13 @@ public class PolicyRegister {
         return policyRepository.findByCustomerCustomerName(customerName);
     }
 
-    // ---------------------------------------------------------
-    // VEHICLE TYPE QUERIES
-    // ---------------------------------------------------------
+
 
     public List<PolicyDetail> findByVehicleType(VehicleType vehicleType) {
         return policyRepository.findByVehicleType(vehicleType);
     }
 
-    // The premium is calculated in Java, not stored in a column, so this still
-    // filters in the database and adds up the premiums in Java.
+
     public double totalPremiumForVehicleType(VehicleType vehicleType) {
         return policyRepository.findByVehicleType(vehicleType)
                 .stream()
@@ -140,10 +122,7 @@ public class PolicyRegister {
         return counts;
     }
 
-    // ---------------------------------------------------------
-    // EXPIRY QUERIES
-    // Same rule as before: after 'today', on or before today + days.
-    // ---------------------------------------------------------
+
 
     public List<PolicyDetail> findExpiringWithin(int days, LocalDate today) {
         return policyRepository.findExpiringBetween(today, today.plusDays(days));
@@ -153,14 +132,12 @@ public class PolicyRegister {
         return policyRepository.findExpiringBetween(referenceDate, referenceDate.plusDays(days));
     }
 
-    // Uses the fixed reference date
+
     public List<PolicyDetail> policiesExpiringWithin(int days) {
         return policiesExpiringWithin(days, REFERENCE_DATE);
     }
 
-    // ---------------------------------------------------------
-    // SIMILAR POLICY HOLDERS (logic unchanged)
-    // ---------------------------------------------------------
+
 
     public List<PolicyDetail> findSimilarPolicyHolders(String policyNumber)
             throws PolicyNotFoundException {
@@ -195,9 +172,7 @@ public class PolicyRegister {
         return similarPolicies;
     }
 
-    // ---------------------------------------------------------
-    // STREAM QUERIES (logic unchanged)
-    // ---------------------------------------------------------
+
 
     public Optional<String> customerWithMostPolicies() {
         return policyRepository.findAll()
@@ -221,9 +196,7 @@ public class PolicyRegister {
                 .collect(Collectors.toList());
     }
 
-    // ---------------------------------------------------------
-    // ALL POLICIES
-    // ---------------------------------------------------------
+
 
     public Collection<PolicyDetail> getAllPolicies() {
         return policyRepository.findAll();

@@ -1,0 +1,334 @@
+╔══════════════════════════════════════════════════════════════════╗
+║       POLICY MANAGEMENT SYSTEM — API TESTING (PowerShell)        ║
+║                    Assignment 12 Demo Script                     ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Base URL        : http://localhost:8080/api/policies            ║
+║  JSON date format: yyyy-MM-dd   (body)      e.g. 2027-10-29      ║
+║  Renew date fmt  : dd/MM/yyyy   (query)     e.g. 29/10/2026      ║
+║                                                                  ║
+║  Every call prints the HTTP status (200 OK, 201 Created,         ║
+║  404 Not Found, 409 Conflict, ...) plus the response body.       ║
+╚══════════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 0️⃣  SETUP — BASE URL + API HELPER   (run this first, once)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+$base = "http://localhost:8080/api/policies"
+
+function Invoke-PolicyApi {
+    param(
+        [string]$Method,
+        [string]$Uri,
+        [string]$Body = $null
+    )
+
+    try {
+        if ($Body) {
+            $response = Invoke-WebRequest `
+                -Method $Method `
+                -Uri $Uri `
+                -ContentType "application/json" `
+                -Body $Body
+        }
+        else {
+            $response = Invoke-WebRequest `
+                -Method $Method `
+                -Uri $Uri
+        }
+
+        Write-Host "`nHTTP Status:" $response.StatusCode $response.StatusDescription -ForegroundColor Green
+
+        if ($response.Content) {
+            $response.Content | ConvertFrom-Json | Format-List
+        }
+    }
+    catch {
+        $statusCode = [int]$_.Exception.Response.StatusCode
+        $statusDescription = $_.Exception.Response.StatusDescription
+
+        Write-Host "`nHTTP Status:" $statusCode $statusDescription -ForegroundColor Red
+
+        if ($_.ErrorDetails.Message) {
+            try {
+                $_.ErrorDetails.Message | ConvertFrom-Json | Format-List
+            }
+            catch {
+                Write-Host $_.ErrorDetails.Message
+            }
+        }
+    }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 1️⃣  CREATE CAR POLICIES          POST /api/policies/car
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── CAR-1001 ──────────────────────────────────────────────────────
+
+$body = @{
+    policyNum          = "CAR-1001"
+    customerId         = "CUST-001"
+    customerName       = "Amit"
+    customerAge        = 32
+    previousClaimCount = 0
+    expiryDate         = "2027-10-29"
+    registrationNumber = "MH12AB1234"
+} | ConvertTo-Json
+
+Invoke-PolicyApi -Method Post -Uri "$base/car" -Body $body
+
+── CAR-1002 ──────────────────────────────────────────────────────
+
+$body = @{
+    policyNum          = "CAR-1002"
+    customerId         = "CUST-002"
+    customerName       = "Neha"
+    customerAge        = 28
+    previousClaimCount = 1
+    expiryDate         = "2026-11-15"
+    registrationNumber = "KA05CD5678"
+} | ConvertTo-Json
+
+Invoke-PolicyApi -Method Post -Uri "$base/car" -Body $body
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 2️⃣  CREATE BIKE POLICIES         POST /api/policies/bike
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── BIKE-2001 ─────────────────────────────────────────────────────
+
+$body = @{
+    policyNum          = "BIKE-2001"
+    customerId         = "CUST-003"
+    customerName       = "Rahul"
+    customerAge        = 25
+    previousClaimCount = 0
+    expiryDate         = "2027-05-20"
+    engineCC           = 150
+} | ConvertTo-Json
+
+Invoke-PolicyApi -Method Post -Uri "$base/bike" -Body $body
+
+── BIKE-2002 ─────────────────────────────────────────────────────
+   NOTE: CUST-001 (Amit) is intentionally reused here to verify
+   that multiple policies can belong to the same customer.
+
+$body = @{
+    policyNum          = "BIKE-2002"
+    customerId         = "CUST-001"
+    customerName       = "Amit"
+    customerAge        = 32
+    previousClaimCount = 2
+    expiryDate         = "2026-12-01"
+    engineCC           = 350
+} | ConvertTo-Json
+
+Invoke-PolicyApi -Method Post -Uri "$base/bike" -Body $body
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 3️⃣  CREATE TRUCK POLICIES        POST /api/policies/truck
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── TRUCK-3001 ────────────────────────────────────────────────────
+
+$body = @{
+    policyNum          = "TRUCK-3001"
+    customerId         = "CUST-004"
+    customerName       = "Suresh"
+    customerAge        = 45
+    previousClaimCount = 0
+    expiryDate         = "2027-08-10"
+    loadCapacityTons   = 12.5
+} | ConvertTo-Json
+
+Invoke-PolicyApi -Method Post -Uri "$base/truck" -Body $body
+
+── TRUCK-3002 ────────────────────────────────────────────────────
+
+$body = @{
+    policyNum          = "TRUCK-3002"
+    customerId         = "CUST-002"
+    customerName       = "Neha"
+    customerAge        = 28
+    previousClaimCount = 0
+    expiryDate         = "2026-11-30"
+    loadCapacityTons   = 20.0
+} | ConvertTo-Json
+
+Invoke-PolicyApi -Method Post -Uri "$base/truck" -Body $body
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 4️⃣  GET ONE POLICY               GET /api/policies/{policyNumber}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Invoke-PolicyApi -Method Get -Uri "$base/CAR-1001"
+
+── Expected output ───────────────────────────────────────────────
+   HTTP Status: 200 OK
+
+   policyNum          : CAR-1001
+   customerName       : Amit
+   customerAge        : 32
+   vehicleType        : CAR
+   previousClaimCount : 0
+   status             : ACTIVE
+   expiryDate         : 2027-10-29
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 5️⃣  LIST ALL POLICIES            GET /api/policies
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Invoke-PolicyApi -Method Get -Uri $base
+
+── Expected: HTTP Status: 200 OK, followed by all policies ───────
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 6️⃣  RECORD A CLAIM               POST /api/policies/{num}/claims
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Invoke-PolicyApi -Method Post -Uri "$base/CAR-1001/claims"
+
+── Expected output ───────────────────────────────────────────────
+   HTTP Status: 200 OK
+
+   policyNum          : CAR-1001
+   customerName       : Amit
+   customerAge        : 32
+   vehicleType        : CAR
+   previousClaimCount : 1          <-- incremented
+   status             : ACTIVE
+   expiryDate         : 2027-10-29
+
+── Verify ────────────────────────────────────────────────────────
+
+Invoke-PolicyApi -Method Get -Uri "$base/CAR-1001"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 7️⃣  EXPIRE A POLICY              POST /api/policies/{num}/expire
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Invoke-PolicyApi -Method Post -Uri "$base/BIKE-2001/expire"
+
+── Verify ────────────────────────────────────────────────────────
+
+Invoke-PolicyApi -Method Get -Uri "$base/BIKE-2001"
+
+── Check for ─────────────────────────────────────────────────────
+   HTTP Status: 200 OK
+   status      : EXPIRED
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 8️⃣  RENEW A POLICY               POST /api/policies/{num}/renew?on=dd/MM/yyyy
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Rules: policy must be ACTIVE, renewal opens 30 days before
+   expiry, and fewer than 3 previous claims.
+
+Invoke-PolicyApi -Method Post -Uri "$base/CAR-1002/renew?on=29/10/2026"
+
+── Verify ────────────────────────────────────────────────────────
+
+Invoke-PolicyApi -Method Get -Uri "$base/CAR-1002"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 9️⃣  CALCULATE PREMIUM            GET /api/policies/{num}/premium
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Returns both the standard premium and the no-claim-bonus
+   discounted premium.
+
+Invoke-PolicyApi -Method Get -Uri "$base/TRUCK-3001/premium"
+
+── Expected: HTTP Status: 200 OK, followed by premium response ───
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 🔟  NEGATIVE TEST — DUPLICATE POLICY NUMBER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Re-run the CAR-1001 creation request. This demonstrates
+   DuplicatePolicyNumberException handling.
+
+$body = @{
+    policyNum          = "CAR-1001"
+    customerId         = "CUST-001"
+    customerName       = "Amit"
+    customerAge        = 32
+    previousClaimCount = 0
+    expiryDate         = "2027-10-29"
+    registrationNumber = "MH12AB1234"
+} | ConvertTo-Json
+
+Invoke-PolicyApi -Method Post -Uri "$base/car" -Body $body
+
+── Expected ──────────────────────────────────────────────────────
+   HTTP Status: 409 Conflict
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 1️⃣1️⃣  NEGATIVE TEST — UNKNOWN POLICY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Verifies PolicyNotFoundException handling.
+
+Invoke-PolicyApi -Method Get -Uri "$base/CAR-9999"
+
+── Expected ──────────────────────────────────────────────────────
+   HTTP Status: 404 Not Found
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 1️⃣2️⃣  PERSISTENCE TEST  (important for Assignment 12)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   STEP 1 — confirm the policy exists:
+
+Invoke-PolicyApi -Method Get -Uri "$base/CAR-1001"
+
+   STEP 2 — STOP the Spring Boot application, then START it again.
+            Do NOT recreate CAR-1001.
+
+   STEP 3 — after restart, run:
+
+$base = "http://localhost:8080/api/policies"
+Invoke-PolicyApi -Method Get -Uri "$base/CAR-1001"
+
+   If you still get HTTP Status: 200 OK with CAR-1001's data,
+   you have demonstrated that the policy survived the restart and
+   was loaded from the file-based H2 database.
+
+
+╔══════════════════════════════════════════════════════════════════╗
+║  RECOMMENDED DEMO SEQUENCE                                       ║
+╠══════════════════════════════════════════════════════════════════╣
+║   1. Create all 6 policies (CAR x2, BIKE x2, TRUCK x2)           ║
+║   2. Get one policy        ->  $base/CAR-1001                    ║
+║   3. List all policies     ->  $base                             ║
+║   4. Record claim          ->  CAR-1001/claims                   ║
+║   5. Calculate premium     ->  TRUCK-3001/premium                ║
+║   6. Renew                 ->  CAR-1002/renew?on=29/10/2026      ║
+║   7. Expire                ->  BIKE-2001/expire                  ║
+║   8. Duplicate test        ->  create CAR-1001 again (409)       ║
+║   9. Not-found test        ->  $base/CAR-9999 (404)              ║
+║  10. Restart Spring Boot                                         ║
+║  11. Verify persistence    ->  $base/CAR-1001 (still 200 OK)     ║
+╠══════════════════════════════════════════════════════════════════╣
+║  This proves HTTP behavior, business rules, exception handling,  ║
+║  lifecycle operations, and database persistence — not just the   ║
+║  response objects.                                               ║
+╠══════════════════════════════════════════════════════════════════╣
+║  H2 CONSOLE: http://localhost:8080/h2-console                    ║
+║    JDBC URL : jdbc:h2:file:./data/policydb                       ║
+║    User     : sa          Password: (blank)                      ║
+╚══════════════════════════════════════════════════════════════════╝
+
+
+DELETE FROM POLICY;
+DELETE FROM CUSTOMER;

@@ -36,11 +36,9 @@ public abstract class PolicyDetail {
     @Column(name = "policy_num", updatable = false, nullable = false)
     private String policyNum;
 
-
-    @ManyToOne(optional = false, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinColumn(name = "customer_user_id",nullable = false)
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
-
 
     @Enumerated(EnumType.STRING)
     @Column(name = "vehicle_type", nullable = false)
@@ -49,16 +47,16 @@ public abstract class PolicyDetail {
     @Column(name = "previous_claim_count", nullable = false)
     private int previousClaimCount;
 
-    // Stores "ACTIVE" / "EXPIRED" / "RENEWED" as text.
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private PolicyStatus status;
 
-    // 'final' removed for the same reason as policyNum. There is still no setter.
+
     @Column(name = "expiry_date", nullable = false)
     private LocalDate expiryDate;
 
-    // static fields are ignored by JPA, so these are not columns
+
     private static final int RENEWAL_WINDOW_DAYS = 30;
     private static final int CLAIMS_CAP = 3;
 

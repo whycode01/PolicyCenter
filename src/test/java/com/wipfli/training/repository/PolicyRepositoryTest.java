@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 class PolicyRepositoryTest {
 
-    // Fixed reference date - never LocalDate.now(), so the tests are repeatable.
+
     private static final LocalDate REF = LocalDate.of(2026, 8, 9);
 
     @Autowired
@@ -30,10 +30,7 @@ class PolicyRepositoryTest {
     @Autowired
     private TestEntityManager em;
 
-    // flush() forces Hibernate to run the INSERT/UPDATE against the database NOW,
-    // and clear() empties the first-level (persistence context) cache.
-    // So every findById / query below is a REAL SELECT from the database,
-    // not Hibernate handing back the same in-memory object we just saved.
+
     private void flushAndClear() {
         em.flush();
         em.clear();
@@ -78,7 +75,7 @@ class PolicyRepositoryTest {
         PolicyDetail loaded = repository.findById("CAR-EXP").orElseThrow();
 
         assertThat(loaded.getStatus()).isEqualTo(PolicyStatus.EXPIRED);
-        // A different Java object than the one we saved -> it really came from the DB.
+
         assertThat(loaded).isNotSameAs(saved);
     }
 
@@ -154,7 +151,7 @@ class PolicyRepositoryTest {
 
         List<PolicyDetail> result = repository.findExpiringBetween(from, to);
 
-        // containsExactly also proves the ORDER BY expiryDate (from+1 before to).
+
         assertThat(result)
                 .extracting(PolicyDetail::getPolicyNum)
                 .containsExactly("EXP-AFTER-FROM", "EXP-ON-TO");
@@ -165,14 +162,11 @@ class PolicyRepositoryTest {
         repository.save(new CarPolicy("DUP-1", amit(), 0, REF.plusDays(60), "FIRST-REG"));
         flushAndClear();
 
-        // A DIFFERENT policy object, but the SAME policy number.
+
         repository.save(new CarPolicy("DUP-1", neha(), 0, REF.plusDays(60), "SECOND-REG"));
         flushAndClear();
 
-        // save() with an assigned @Id calls merge(), and merge() UPDATES the existing row
-        // instead of failing. So the second save silently overwrote the first.
-        // This is exactly why PolicyRegister.add() must call existsById() itself
-        // to return 409 Conflict instead of letting a duplicate overwrite data.
+
         assertThat(repository.count()).isEqualTo(1);
 
         PolicyDetail loaded = repository.findById("DUP-1").orElseThrow();
